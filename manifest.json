@@ -1,7 +1,7 @@
 {
   "name": "Mentor",
   "short_name": "Mentor",
-  "start_url": "./Mentor Mobile.dc.html",
+  "start_url": "./Mentor.dc.html",
   "display": "standalone",
   "background_color": "#F8F9FA",
   "theme_color": "#4285F4",

@@ -23,6 +23,20 @@
     .msym { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; user-select: none; }
     @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     @keyframes toastIn { 0% { transform: translate(-50%, 20px); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
+    .mentor-shell { max-width: 480px; }
+    .mentor-sidebar { display: none; }
+    .mentor-bottomnav { display: flex; }
+    .mentor-content { max-width: none; }
+    @media (min-width: 900px) {
+      .mentor-shell { max-width: 1200px; display: flex !important; flex-direction: row !important; }
+      .mentor-sidebar { display: flex; }
+      .mentor-bottomnav { display: none !important; }
+      .mentor-main { flex: 1; min-width: 0; }
+      .mentor-content { max-width: 720px; padding: 4px 32px 24px 32px !important; }
+      .mentor-topbar { padding: 22px 32px 12px 32px !important; }
+      .mentor-fab { right: 32px !important; bottom: 32px !important; left: auto !important; transform: none !important; }
+      .mentor-toast { bottom: 32px !important; }
+    }
   </style>
   <script>
     if ('serviceWorker' in navigator) {
@@ -34,10 +48,23 @@
   <script src="./drive-sync.js"></script>
 </helmet>
 
-<div style="max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:#F8F9FA;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,0.06);">
+<div class="mentor-shell" style="margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:#F8F9FA;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,0.06);">
+
+  <!-- Sidebar nav (desktop/wide viewports) -->
+  <div class="mentor-sidebar" style="width:230px;flex-shrink:0;background:#FFFFFF;border-right:1px solid #E8EAED;flex-direction:column;padding:24px 12px;">
+    <div style="font-size:19px;font-weight:700;color:#202124;padding:0 12px 22px 12px;">Mentor</div>
+    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="6">
+      <button onClick="{{ n.onSelect }}" style="background:{{ n.sidebarBg }};border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:4px;text-align:left;">
+        <span class="msym" style="color:{{ n.color }};font-size:21px;">{{ n.icon }}</span>
+        <span style="font-size:14px;color:{{ n.color }};font-weight:{{ n.weight }};">{{ n.label }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div class="mentor-main" style="display:flex;flex-direction:column;overflow:hidden;position:relative;min-width:0;height:100%;">
 
   <!-- Top bar -->
-  <div style="flex-shrink:0;padding:18px 20px 12px 20px;display:flex;align-items:center;justify-content:space-between;background:#F8F9FA;">
+  <div class="mentor-topbar" style="flex-shrink:0;padding:18px 20px 12px 20px;display:flex;align-items:center;justify-content:space-between;background:#F8F9FA;">
     <div>
       <div style="font-size:22px;font-weight:700;color:#202124;">{{ viewTitle }}</div>
       <div style="font-size:13px;color:#5F6368;margin-top:2px;">{{ viewSubtitle }}</div>
@@ -53,7 +80,8 @@
   </div>
 
   <!-- Content -->
-  <div style="flex:1;overflow-y:auto;padding:4px 16px 24px 16px;">
+  <div class="mentor-content" style="flex:1;overflow-y:auto;padding:4px 16px 24px 16px;">
+
 
     <!-- TODAY VIEW -->
     <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
@@ -122,7 +150,14 @@
               </button>
               <div style="flex:1;min-width:0;">
                 <div style="font-size:15px;font-weight:500;color:#202124;text-decoration:{{ h.strike }};">{{ h.name }}</div>
-                <div style="font-size:12px;color:#5F6368;margin-top:2px;">{{ h.listName }}<sc-if value="{{ h.showCount }}"> · {{ h.countLabel }}</sc-if></div>
+                <div style="font-size:12px;color:#5F6368;margin-top:2px;display:flex;align-items:center;gap:6px;">
+                  <span>{{ h.listName }}<sc-if value="{{ h.showCount }}"> · {{ h.countLabel }}</sc-if></span>
+                  <sc-if value="{{ h.showCount }}">
+                    <button onClick="{{ h.onResetCount }}" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
+                      <span class="msym" style="font-size:15px;color:#9AA0A6;">restart_alt</span>
+                    </button>
+                  </sc-if>
+                </div>
               </div>
               <div style="display:flex;align-items:center;gap:4px;background:#FEF7E0;padding:5px 10px;border-radius:10px;flex-shrink:0;">
                 <span class="msym" style="font-size:15px;color:#F9AB00;">local_fire_department</span>
@@ -490,7 +525,16 @@
             <span class="msym" style="font-size:18px;color:{{ it.color }};">{{ it.icon }}</span>
             <span style="font-size:14px;color:#202124;flex:1;text-decoration:{{ it.strike }};">{{ it.label }}</span>
             <sc-if value="{{ it.showCount }}">
-              <span style="font-size:11px;font-weight:700;color:#B06000;background:#FEF7E0;padding:2px 8px;border-radius:8px;">{{ it.countLabel }}</span>
+              <span style="font-size:11px;font-weight:700;color:#B06000;background:#FEF7E0;padding:2px 8px;border-radius:8px;">{{ it.dayCountLabel }}</span>
+              <sc-if value="{{ it.hasGoalLabel }}">
+                <span style="font-size:11px;font-weight:700;color:#1967D2;background:#E8F0FE;padding:2px 8px;border-radius:8px;">{{ it.goalCountLabel }}</span>
+              </sc-if>
+              <sc-if value="{{ it.isHabit }}">
+                <span style="font-size:10px;font-weight:700;color:#5F6368;background:#F1F3F4;width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ it.freqBadge }}</span>
+              </sc-if>
+              <button onClick="{{ it.onResetCount }}" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
+                <span class="msym" style="font-size:15px;color:#9AA0A6;">restart_alt</span>
+              </button>
             </sc-if>
             <span style="font-size:11px;color:#9AA0A6;background:#F1F3F4;padding:2px 8px;border-radius:8px;">{{ it.kind }}</span>
             <sc-if value="{{ it.isTask }}">
@@ -557,7 +601,7 @@
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
             <div style="background:#F8F9FA;border-radius:10px;padding:9px;text-align:center;">
               <div style="font-size:16px;font-weight:700;color:#202124;">{{ hd.pctLabel }}</div>
               <div style="font-size:10.5px;color:#9AA0A6;margin-top:1px;">{{ hd.periodLabel }}</div>
@@ -565,6 +609,10 @@
             <div style="background:#F8F9FA;border-radius:10px;padding:9px;text-align:center;">
               <div style="font-size:16px;font-weight:700;color:#202124;">{{ hd.doneOfTotal }}</div>
               <div style="font-size:10.5px;color:#9AA0A6;margin-top:1px;">concluídos</div>
+            </div>
+            <div style="background:#F8F9FA;border-radius:10px;padding:9px;text-align:center;">
+              <div style="font-size:16px;font-weight:700;color:#202124;">{{ hd.periodCount }}</div>
+              <div style="font-size:10.5px;color:#9AA0A6;margin-top:1px;">vezes no período</div>
             </div>
             <div style="background:#F8F9FA;border-radius:10px;padding:9px;text-align:center;">
               <div style="font-size:16px;font-weight:700;color:#202124;">{{ hd.best }}</div>
@@ -641,19 +689,21 @@
 
   <!-- FAB -->
   <sc-if value="{{ showFab }}">
-    <button onClick="{{ openAdd }}" style="position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:56px;height:56px;border-radius:28px;background:#4285F4;border:none;box-shadow:0 4px 12px rgba(66,133,244,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:40;">
+    <button class="mentor-fab" onClick="{{ openAdd }}" style="position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:56px;height:56px;border-radius:28px;background:#4285F4;border:none;box-shadow:0 4px 12px rgba(66,133,244,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:40;">
       <span class="msym" style="color:#FFFFFF;font-size:26px;">add</span>
     </button>
   </sc-if>
 
-  <!-- Bottom nav -->
-  <div style="flex-shrink:0;background:#FFFFFF;border-top:1px solid #E8EAED;display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom)) 4px;">
+  <!-- Bottom nav (mobile/narrow viewports) -->
+  <div class="mentor-bottomnav" style="flex-shrink:0;background:#FFFFFF;border-top:1px solid #E8EAED;padding:8px 4px calc(8px + env(safe-area-inset-bottom)) 4px;">
     <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
       <button onClick="{{ n.onSelect }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;">
         <span class="msym" style="color:{{ n.color }};font-size:22px;">{{ n.icon }}</span>
         <span style="font-size:10px;color:{{ n.color }};font-weight:{{ n.weight }};">{{ n.label }}</span>
       </button>
     </sc-for>
+  </div>
+
   </div>
 
   <!-- ADD/EDIT MODAL -->
@@ -780,6 +830,19 @@
     </div>
   </sc-if>
 
+  <!-- DELETE RECURRING TASK CONFIRM -->
+  <sc-if value="{{ confirmDeleteOpen }}">
+    <div style="position:absolute;inset:0;background:rgba(32,33,36,0.4);display:flex;align-items:center;justify-content:center;z-index:55;padding:20px;" onClick="{{ cancelDeleteConfirm }}">
+      <div style="background:#FFFFFF;width:100%;max-width:360px;border-radius:16px;padding:20px;" onClick="{{ stopProp }}">
+        <div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:6px;">Excluir tarefa recorrente</div>
+        <div style="font-size:13.5px;color:#5F6368;margin-bottom:18px;line-height:1.5;">"{{ confirmDeleteTaskTitle }}" se repete. O que deseja fazer?</div>
+        <button onClick="{{ confirmSkipOccurrence }}" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #E8EAED;background:none;color:#202124;font-size:13.5px;font-weight:500;cursor:pointer;margin-bottom:8px;">Excluir somente esta ocorrência</button>
+        <button onClick="{{ confirmDeleteAllOccurrences }}" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #FCE8E6;background:#FCE8E6;color:#D93025;font-size:13.5px;font-weight:500;cursor:pointer;margin-bottom:8px;">Excluir esta e as próximas</button>
+        <button onClick="{{ cancelDeleteConfirm }}" style="width:100%;padding:12px;border-radius:12px;border:none;background:none;color:#9AA0A6;font-size:13.5px;cursor:pointer;">Cancelar</button>
+      </div>
+    </div>
+  </sc-if>
+
   <!-- NEW LIST MODAL -->
   <sc-if value="{{ newListOpen }}">
     <div style="position:absolute;inset:0;background:rgba(32,33,36,0.4);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;" onClick="{{ closeNewList }}">
@@ -850,7 +913,7 @@
 
   <!-- Toast -->
   <sc-if value="{{ toastMsg }}">
-    <div style="position:absolute;bottom:170px;left:50%;transform:translateX(-50%);background:#202124;color:#FFFFFF;font-size:13px;padding:10px 12px 10px 18px;border-radius:20px;animation:toastIn 0.2s ease-out;z-index:60;display:flex;align-items:center;gap:14px;white-space:nowrap;">
+    <div class="mentor-toast" style="position:absolute;bottom:170px;left:50%;transform:translateX(-50%);background:#202124;color:#FFFFFF;font-size:13px;padding:10px 12px 10px 18px;border-radius:20px;animation:toastIn 0.2s ease-out;z-index:60;display:flex;align-items:center;gap:14px;white-space:nowrap;">
       <span>{{ toastMsg }}</span>
       <sc-if value="{{ hasToastAction }}">
         <button onClick="{{ toastAction }}" style="background:none;border:none;color:#8AB4F8;font-size:13px;font-weight:700;cursor:pointer;padding:4px 8px;">Desfazer</button>
@@ -888,28 +951,31 @@ const ICONS = ['directions_run','local_drink','menu_book','fitness_center','bedt
   'nightlife','celebration','wc','king_bed','chair','desk','translate','history_edu',
   'medication_liquid'];
 
-const WEEKDAY_LABELS = ['D','S','T','Q','Q','S','S'];
-const DAY_TOGGLE = ['D','S','T','Q','Q','S','S'];
+const WEEKDAY_LABELS = ['S','T','Q','Q','S','S','D'];
+const DAY_TOGGLE = ['S','T','Q','Q','S','S','D'];
+const DAY_ORDER = [1,2,3,4,5,6,0];
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 function isoOf(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 function addDays(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return isoOf(d); }
 function addMonths(iso, n) { const d = new Date(iso + 'T00:00:00'); d.setMonth(d.getMonth() + n); return isoOf(d); }
-function weekStartIso(iso) { const d = new Date(iso + 'T00:00:00'); return addDays(iso, -d.getDay()); }
+function weekStartIso(iso) { const d = new Date(iso + 'T00:00:00'); const day = d.getDay(); const back = day === 0 ? 6 : day - 1; return addDays(iso, -back); }
 function prevPeriod(key, unit) {
   if (unit === 'week') return addDays(key, -7);
+  if (unit === 'year') return String(Number(key) - 1);
   const parts = key.split('-');
   const d = new Date(Number(parts[0]), Number(parts[1]) - 2, 1);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 function nextPeriodKey(key, unit) {
   if (unit === 'week') return addDays(key, 7);
+  if (unit === 'year') return String(Number(key) + 1);
   const parts = key.split('-');
   const d = new Date(Number(parts[0]), Number(parts[1]), 1);
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
-function periodKeyOf(iso, unit) { return unit === 'week' ? weekStartIso(iso) : iso.slice(0, 7); }
+function periodKeyOf(iso, unit) { return unit === 'week' ? weekStartIso(iso) : (unit === 'year' ? iso.slice(0, 4) : iso.slice(0, 7)); }
 function periodSums(h, unit) {
   const sums = {};
   Object.keys(h.history).forEach(d => {
@@ -940,6 +1006,7 @@ class Component extends DCLogic {
     tasks: [],
     habits: [],
     lists: LISTS_DEFAULT,
+    completedOccurrences: [],
     view: 'today',
     selectedDate: todayISO(),
     calMonth: new Date().getMonth(),
@@ -957,6 +1024,7 @@ class Component extends DCLogic {
     draftSubtasks: [],
     newSubtaskText: '',
     editingSubtaskLinkId: null,
+    confirmDeleteTaskId: null,
     draftIcon: 'self_improvement',
     draftFreq: [0,1,2,3,4,5,6],
     draftTimesPerDay: 1,
@@ -983,6 +1051,13 @@ class Component extends DCLogic {
   };
 
   componentDidMount() {
+    this._onPopState = () => {
+      if (this.state.confirmDeleteTaskId) { this.setState({ confirmDeleteTaskId: null }); return; }
+      if (this.state.modalOpen) { this.setState({ modalOpen: false }); return; }
+      if (this.state.newListOpen) { this.setState({ newListOpen: false }); return; }
+      if (this.state.settingsOpen) { this.setState({ settingsOpen: false }); return; }
+    };
+    window.addEventListener('popstate', this._onPopState);
     try {
       const raw = localStorage.getItem('ticktick_clone_data_v1');
       if (raw) {
@@ -991,6 +1066,7 @@ class Component extends DCLogic {
           tasks: data.tasks || [],
           habits: data.habits || [],
           lists: data.lists && data.lists.length ? data.lists : LISTS_DEFAULT,
+          completedOccurrences: data.completedOccurrences || [],
         });
       }
       const settings = localStorage.getItem('ticktick_clone_settings_v1');
@@ -1004,10 +1080,22 @@ class Component extends DCLogic {
     } catch (e) {}
   }
 
+  componentWillUnmount() {
+    if (this._onPopState) window.removeEventListener('popstate', this._onPopState);
+  }
+
+  pushOverlayHistory() {
+    try { history.pushState({ mentorOverlay: true }, ''); } catch (e) {}
+  }
+  popOverlayHistoryIfNeeded() {
+    try { if (history.state && history.state.mentorOverlay) history.back(); } catch (e) {}
+  }
+
   persist() {
     try {
       localStorage.setItem('ticktick_clone_data_v1', JSON.stringify({
         tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists,
+        completedOccurrences: this.state.completedOccurrences,
       }));
     } catch (e) {}
     if (this.state.driveSyncEnabled && this.state.driveConnected) this.syncToDriveSilently();
@@ -1017,7 +1105,7 @@ class Component extends DCLogic {
     if (!window.DriveSync || !window.DriveSync.isSignedIn()) return;
     this.setState({ syncing: true });
     try {
-      await window.DriveSync.save({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists });
+      await window.DriveSync.save({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists, completedOccurrences: this.state.completedOccurrences });
       this.setState({ syncing: false });
     } catch (e) {
       this.setState({ syncing: false, syncMessage: 'Erro na sincronização automática: ' + e.message, syncMessageColor: '#D93025' });
@@ -1040,18 +1128,60 @@ class Component extends DCLogic {
 
   // ---------- Task ops ----------
   toggleTask(id) {
+    const task = this.state.tasks.find(t => t.id === id);
+    const willCompleteRecurring = task && !task.completed && task.repeat && task.repeat !== 'none';
+    const occurrence = willCompleteRecurring ? {
+      id: uid(), taskId: task.id, title: task.title, listId: task.listId, date: task.dueDate,
+    } : null;
     this.setState(s => ({
       tasks: s.tasks.map(t => {
         if (t.id !== id) return t;
         if (!t.completed && t.repeat && t.repeat !== 'none') {
-          return { ...t, dueDate: nextDueDate(t.dueDate, t.repeat), completed: false };
+          const completedLog = [...(t.completedLog || []), t.dueDate];
+          return { ...t, dueDate: nextDueDate(t.dueDate, t.repeat), completed: false, completedLog };
         }
         return { ...t, completed: !t.completed };
-      })
+      }),
+      completedOccurrences: occurrence ? [...s.completedOccurrences, occurrence] : s.completedOccurrences,
     }), () => this.persist());
   }
+  requestDeleteTask(id) {
+    const t = this.state.tasks.find(x => x.id === id);
+    if (t && t.repeat && t.repeat !== 'none') { this.setState({ confirmDeleteTaskId: id }); this.pushOverlayHistory(); return; }
+    this.deleteTask(id);
+  }
+  cancelDeleteConfirm() { this.setState({ confirmDeleteTaskId: null }); this.popOverlayHistoryIfNeeded(); }
+  confirmSkipOccurrence() {
+    const id = this.state.confirmDeleteTaskId;
+    this.setState(s => ({
+      tasks: s.tasks.map(t => t.id === id ? { ...t, dueDate: nextDueDate(t.dueDate, t.repeat) } : t),
+      confirmDeleteTaskId: null,
+    }), () => this.persist());
+    this.popOverlayHistoryIfNeeded();
+    this.showToast('Ocorrência pulada.');
+  }
+  confirmDeleteAllOccurrences() {
+    const id = this.state.confirmDeleteTaskId;
+    this.setState({ confirmDeleteTaskId: null });
+    this.popOverlayHistoryIfNeeded();
+    this.deleteTask(id);
+  }
   deleteTask(id) {
+    const idx = this.state.tasks.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const removed = this.state.tasks[idx];
     this.setState(s => ({ tasks: s.tasks.filter(t => t.id !== id) }), () => this.persist());
+    this.showUndoToast('Tarefa excluída.', () => this.undoDeleteTask(removed, idx));
+  }
+  undoDeleteTask(task, idx) {
+    this.setState(s => {
+      const tasks = s.tasks.slice();
+      tasks.splice(Math.min(idx, tasks.length), 0, task);
+      return { tasks };
+    }, () => this.persist());
+    clearTimeout(this._toastT);
+    this.setState({ toastMsg: 'Restaurado.', toastAction: null });
+    this._toastT = setTimeout(() => this.setState({ toastMsg: '' }), 1600);
   }
   toggleExpand(id) {
     this.setState(s => ({ expandedTaskId: s.expandedTaskId === id ? null : id }));
@@ -1072,6 +1202,7 @@ class Component extends DCLogic {
       draftSubtasks: (task.subtasks || []).map(st => ({ ...st })),
       newSubtaskText: '',
     });
+    this.pushOverlayHistory();
   }
 
   // ---------- Habit ops ----------
@@ -1081,17 +1212,30 @@ class Component extends DCLogic {
       habits: s.habits.map(h => {
         if (h.id !== id) return h;
         const mode = h.freqMode || 'day';
-        const tpd = mode === 'day' ? (h.timesPerDay || 1) : 1;
         const cur = h.history[today] || 0;
-        const next = cur + 1 > tpd ? 0 : cur + 1;
+        const next = cur + 1;
         const history = { ...h.history };
-        if (next === 0) delete history[today]; else history[today] = next;
+        history[today] = next;
         return { ...h, history };
       })
     }), () => this.persist());
   }
   deleteHabit(id) {
+    const idx = this.state.habits.findIndex(h => h.id === id);
+    if (idx === -1) return;
+    const removed = this.state.habits[idx];
     this.setState(s => ({ habits: s.habits.filter(h => h.id !== id) }), () => this.persist());
+    this.showUndoToast('Hábito excluído.', () => this.undoDeleteHabit(removed, idx));
+  }
+  undoDeleteHabit(habit, idx) {
+    this.setState(s => {
+      const habits = s.habits.slice();
+      habits.splice(Math.min(idx, habits.length), 0, habit);
+      return { habits };
+    }, () => this.persist());
+    clearTimeout(this._toastT);
+    this.setState({ toastMsg: 'Restaurado.', toastAction: null });
+    this._toastT = setTimeout(() => this.setState({ toastMsg: '' }), 1600);
   }
   toggleHabitDay(id, iso) {
     this.setState(s => ({
@@ -1105,16 +1249,25 @@ class Component extends DCLogic {
       })
     }), () => this.persist());
   }
+  resetHabitCountOn(id, iso) {
+    this.setState(s => ({
+      habits: s.habits.map(h => {
+        if (h.id !== id) return h;
+        const history = { ...h.history };
+        delete history[iso];
+        return { ...h, history };
+      })
+    }), () => this.persist());
+  }
   incrementHabitOn(id, iso) {
     this.setState(s => ({
       habits: s.habits.map(h => {
         if (h.id !== id) return h;
         const mode = h.freqMode || 'day';
-        const tpd = mode === 'day' ? (h.timesPerDay || 1) : 1;
         const cur = h.history[iso] || 0;
-        const next = cur + 1 > tpd ? 0 : cur + 1;
+        const next = cur + 1;
         const history = { ...h.history };
-        if (next === 0) delete history[iso]; else history[iso] = next;
+        history[iso] = next;
         return { ...h, history };
       })
     }), () => this.persist());
@@ -1138,11 +1291,26 @@ class Component extends DCLogic {
       draftTimesPerDay: h.timesPerDay || 1,
       draftFreqMode: h.freqMode || 'day', draftFreqCount: h.freqCount || 3,
     });
+    this.pushOverlayHistory();
   }
 
   // ---------- List ops ----------
   deleteList(id) {
+    const idx = this.state.lists.findIndex(l => l.id === id);
+    if (idx === -1) return;
+    const removed = this.state.lists[idx];
     this.setState(s => ({ lists: s.lists.filter(l => l.id !== id) }), () => this.persist());
+    this.showUndoToast('Lista excluída.', () => this.undoDeleteList(removed, idx));
+  }
+  undoDeleteList(list, idx) {
+    this.setState(s => {
+      const lists = s.lists.slice();
+      lists.splice(Math.min(idx, lists.length), 0, list);
+      return { lists };
+    }, () => this.persist());
+    clearTimeout(this._toastT);
+    this.setState({ toastMsg: 'Restaurado.', toastAction: null });
+    this._toastT = setTimeout(() => this.setState({ toastMsg: '' }), 1600);
   }
   toggleListExpand(id) {
     this.setState(s => ({ expandedListId: s.expandedListId === id ? null : id }));
@@ -1150,8 +1318,8 @@ class Component extends DCLogic {
   setStatsPeriod(p) { this.setState({ statsPeriod: p, statsOffset: 0 }); }
   prevStatsPeriod() { this.setState(s => ({ statsOffset: s.statsOffset + 1 })); }
   nextStatsPeriod() { this.setState(s => ({ statsOffset: Math.max(0, s.statsOffset - 1) })); }
-  openNewList() { this.setState({ newListOpen: true, newListName: '', newListColor: '#4285F4' }); }
-  closeNewList() { this.setState({ newListOpen: false }); }
+  openNewList() { this.setState({ newListOpen: true, newListName: '', newListColor: '#4285F4' }); this.pushOverlayHistory(); }
+  closeNewList() { this.setState({ newListOpen: false }); this.popOverlayHistoryIfNeeded(); }
   saveNewList() {
     const name = this.state.newListName.trim();
     if (!name) return;
@@ -1170,8 +1338,9 @@ class Component extends DCLogic {
       draftIcon: 'self_improvement', draftFreq: [0,1,2,3,4,5,6], draftTimesPerDay: 1,
       draftFreqMode: 'day', draftFreqCount: 3,
     });
+    this.pushOverlayHistory();
   }
-  closeModal() { this.setState({ modalOpen: false }); }
+  closeModal() { this.setState({ modalOpen: false }); this.popOverlayHistoryIfNeeded(); }
   stopProp(e) { e.stopPropagation(); }
 
   saveDraft() {
@@ -1253,8 +1422,8 @@ class Component extends DCLogic {
   selectDay(iso) { this.setState({ selectedDate: iso }); }
 
   // ---------- Google Drive sync ----------
-  openSettings() { this.setState({ settingsOpen: true, driveClientIdDraft: this.state.driveClientId, syncMessage: '' }); }
-  closeSettings() { this.setState({ settingsOpen: false }); }
+  openSettings() { this.setState({ settingsOpen: true, driveClientIdDraft: this.state.driveClientId, syncMessage: '' }); this.pushOverlayHistory(); }
+  closeSettings() { this.setState({ settingsOpen: false }); this.popOverlayHistoryIfNeeded(); }
 
   persistDriveSettings() {
     try {
@@ -1290,7 +1459,7 @@ class Component extends DCLogic {
     if (!this.state.driveConnected) { this.setState({ syncMessage: 'Conecte-se ao Google Drive primeiro.', syncMessageColor: '#D93025' }); return; }
     this.setState({ syncing: true, syncMessage: '' });
     try {
-      await window.DriveSync.save({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists });
+      await window.DriveSync.save({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists, completedOccurrences: this.state.completedOccurrences });
       this.setState({ syncing: false, syncMessage: 'Enviado para o Drive.', syncMessageColor: '#188038' });
     } catch (e) {
       this.setState({ syncing: false, syncMessage: 'Erro ao enviar: ' + e.message, syncMessageColor: '#D93025' });
@@ -1306,10 +1475,11 @@ class Component extends DCLogic {
       this.setState({
         tasks: data.tasks || [], habits: data.habits || [],
         lists: (data.lists && data.lists.length) ? data.lists : this.state.lists,
+        completedOccurrences: data.completedOccurrences || [],
         syncing: false, syncMessage: 'Dados atualizados do Drive.', syncMessageColor: '#188038',
       }, () => {
         try {
-          localStorage.setItem('ticktick_clone_data_v1', JSON.stringify({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists }));
+          localStorage.setItem('ticktick_clone_data_v1', JSON.stringify({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists, completedOccurrences: this.state.completedOccurrences }));
         } catch (e) {}
       });
     } catch (e) {
@@ -1352,7 +1522,7 @@ class Component extends DCLogic {
         onToggle: () => this.toggleTask(t.id),
         onExpand: () => this.toggleExpand(t.id),
         onEdit: () => this.editTask(t),
-        onDelete: () => this.deleteTask(t.id),
+        onDelete: () => this.requestDeleteTask(t.id),
       };
     });
 
@@ -1382,7 +1552,7 @@ class Component extends DCLogic {
           onToggle: () => this.toggleSubtask(t.id, st.id),
         })),
         onToggle: () => this.toggleTask(t.id),
-        onDelete: () => this.deleteTask(t.id),
+        onDelete: () => this.requestDeleteTask(t.id),
         onExpand: () => this.toggleExpand(t.id),
         onEdit: () => this.editTask(t),
       };
@@ -1406,7 +1576,7 @@ class Component extends DCLogic {
             isRepeating: !!(t.repeat && t.repeat !== 'none'),
             onToggle: () => this.toggleTask(t.id),
             onEdit: () => this.editTask(t),
-            onDelete: () => this.deleteTask(t.id),
+            onDelete: () => this.requestDeleteTask(t.id),
           };
         }),
       });
@@ -1463,7 +1633,7 @@ class Component extends DCLogic {
           onToggle: () => this.toggleSubtask(t.id, st.id),
         })),
         onToggle: () => this.toggleTask(t.id),
-        onDelete: () => this.deleteTask(t.id),
+        onDelete: () => this.requestDeleteTask(t.id),
         onExpand: () => this.toggleExpand(t.id),
         onEdit: () => this.editTask(t),
       };
@@ -1486,7 +1656,7 @@ class Component extends DCLogic {
         const sums = periodSums(h, mode);
         const sum = sums[periodKeyOf(today, mode)] || 0;
         showCount = true;
-        countLabel = sum + '/' + (h.freqCount || 1) + (mode === 'week' ? ' esta semana' : ' este mês');
+        countLabel = sum + '/' + (h.freqCount || 1) + (mode === 'week' ? ' esta semana' : (mode === 'year' ? ' este ano' : ' este mês'));
       }
       return {
         id: h.id, name: h.name, icon: h.icon, listName: list.name,
@@ -1496,6 +1666,7 @@ class Component extends DCLogic {
         iconColor: done ? '#FFFFFF' : '#5F6368',
         showCount, countLabel,
         onToggle: () => this.incrementHabitToday(h.id),
+        onResetCount: () => this.resetHabitCountOn(h.id, today),
       };
     });
 
@@ -1521,6 +1692,7 @@ class Component extends DCLogic {
       let freqLabel;
       if (mode === 'week') freqLabel = (h.freqCount || 1) + 'x por semana';
       else if (mode === 'month') freqLabel = (h.freqCount || 1) + 'x por mês';
+      else if (mode === 'year') freqLabel = (h.freqCount || 1) + 'x por ano';
       else freqLabel = ((h.freq || []).length === 7 ? 'todo dia' : (h.freq || []).length + ' dias/semana') + (tpd > 1 ? ' · ' + tpd + 'x/dia' : '');
       return {
         id: h.id, name: h.name, icon: h.icon, color: list.color, bgTint: list.color + '1A',
@@ -1534,14 +1706,17 @@ class Component extends DCLogic {
     // ----- Calendar view -----
     const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const firstOfMonth = new Date(s.calYear, s.calMonth, 1);
-    const startOffset = firstOfMonth.getDay();
+    const startOffset = (firstOfMonth.getDay() + 6) % 7;
     const daysInMonth = new Date(s.calYear, s.calMonth + 1, 0).getDate();
     const cells = [];
     for (let i = 0; i < startOffset; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
     while (cells.length % 7 !== 0) cells.push(null);
     const itemCountByDate = {};
-    s.tasks.forEach(t => { if (t.dueDate) itemCountByDate[t.dueDate] = (itemCountByDate[t.dueDate] || 0) + 1; });
+    s.tasks.forEach(t => {
+      if (t.dueDate) itemCountByDate[t.dueDate] = (itemCountByDate[t.dueDate] || 0) + 1;
+    });
+    s.completedOccurrences.forEach(o => { itemCountByDate[o.date] = (itemCountByDate[o.date] || 0) + 1; });
     const calendarDays = cells.map(d => {
       if (d === null) return { num: '', bg: 'transparent', opacity: '0', hasItems: false, onSelect: () => {}, textColor: '#202124', weight: '400' };
       const iso = s.calYear + '-' + String(s.calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -1569,26 +1744,35 @@ class Component extends DCLogic {
         fill: t.completed ? '#34A853' : '#FFFFFF',
         onToggle: () => this.toggleTask(t.id),
         onEdit: () => this.editTask(t),
-        onDelete: () => this.deleteTask(t.id),
+        onDelete: () => this.requestDeleteTask(t.id),
+      })),
+      ...s.completedOccurrences.filter(o => o.date === s.selectedDate).map(o => ({
+        icon: 'checklist', color: '#34A853', label: o.title, kind: 'Concluída', isTask: false,
+        strike: 'line-through', done: true, ringColor: '#34A853', fill: '#34A853',
+        onToggle: () => {},
       })),
       ...s.habits.filter(h => habitScheduledOn(h, s.selectedDate)).map(h => {
         const done = habitDoneOn(h, s.selectedDate);
         const mode = h.freqMode || 'day';
-        let showCount = false, countLabel = '';
+        let showCount = true, dayCountLabel = '', hasGoalLabel = false, goalCountLabel = '';
+        const dayCount = h.history[s.selectedDate] || 0;
         if (mode === 'day') {
           const tpd = h.timesPerDay || 1;
-          showCount = tpd > 1;
-          countLabel = (h.history[s.selectedDate] || 0) + '/' + tpd;
+          dayCountLabel = dayCount + '/' + tpd;
         } else {
           const target = h.freqCount || 1;
           const sums = periodSums(h, mode);
-          showCount = target > 1;
-          countLabel = (sums[periodKeyOf(s.selectedDate, mode)] || 0) + '/' + target;
+          const periodSum = sums[periodKeyOf(s.selectedDate, mode)] || 0;
+          dayCountLabel = dayCount + 'x no dia';
+          hasGoalLabel = true;
+          goalCountLabel = periodSum + '/' + target;
         }
         return {
-          icon: h.icon, color: (listMap[h.listId] || {}).color || '#9AA0A6', label: h.name, kind: 'Hábito', isTask: false,
+          icon: h.icon, color: (listMap[h.listId] || {}).color || '#9AA0A6', label: h.name, kind: 'Hábito', isTask: false, isHabit: true,
+          freqBadge: { day: 'D', week: 'S', month: 'M', year: 'A' }[mode] || 'D',
           strike: done ? 'line-through' : 'none',
-          done, showCount, countLabel,
+          done, showCount, dayCountLabel, hasGoalLabel, goalCountLabel,
+          onResetCount: () => this.resetHabitCountOn(h.id, s.selectedDate),
           ringColor: done ? '#34A853' : '#DADCE0',
           fill: done ? '#34A853' : '#FFFFFF',
           onToggle: () => this.incrementHabitOn(h.id, s.selectedDate),
@@ -1710,6 +1894,7 @@ class Component extends DCLogic {
       let freqLabel;
       if (mode === 'week') freqLabel = (h.freqCount || 1) + 'x por semana';
       else if (mode === 'month') freqLabel = (h.freqCount || 1) + 'x por mês';
+      else if (mode === 'year') freqLabel = (h.freqCount || 1) + 'x por ano';
       else freqLabel = ((h.freq || []).length === 7 ? 'todo dia' : (h.freq || []).length + ' dias/semana') + (tpd > 1 ? ' · ' + tpd + 'x/dia' : '');
 
       const bars = buckets.map(b => {
@@ -1726,6 +1911,7 @@ class Component extends DCLogic {
         freqLabel, streak, best,
         pctLabel: pctVal + '%', periodLabel,
         doneOfTotal: overall.done + '/' + overall.total,
+        periodCount: Object.keys(h.history).filter(d => d >= rangeStart && d <= rangeEnd).reduce((sum, d) => sum + (h.history[d] || 0), 0),
         bars,
       };
     });
@@ -1746,7 +1932,7 @@ class Component extends DCLogic {
           fill: t.completed ? '#34A853' : '#FFFFFF',
           onToggle: () => this.toggleTask(t.id),
           onEdit: () => this.editTask(t),
-          onDelete: () => this.deleteTask(t.id),
+          onDelete: () => this.requestDeleteTask(t.id),
         })),
         ...listHabits.map(h => ({ icon: h.icon, color: l.color, label: h.name, kind: 'Hábito', isTask: false, strike: 'none' })),
       ];
@@ -1774,6 +1960,7 @@ class Component extends DCLogic {
       icon: n.icon, label: n.label,
       color: s.view === n.key ? '#4285F4' : '#9AA0A6',
       weight: s.view === n.key ? '700' : '400',
+      sidebarBg: s.view === n.key ? '#E8F0FE' : 'transparent',
       onSelect: () => this.goView(n.key),
     }));
 
@@ -1817,12 +2004,15 @@ class Component extends DCLogic {
       color: s.draftIcon === name ? '#4285F4' : '#5F6368',
       onSelect: () => this.setState({ draftIcon: name }),
     }));
-    const freqDays = DAY_TOGGLE.map((label, i) => ({
-      label, on: s.draftFreq.includes(i),
-      bg: s.draftFreq.includes(i) ? '#4285F4' : '#F1F3F4',
-      color: s.draftFreq.includes(i) ? '#FFFFFF' : '#5F6368',
-      onToggle: () => this.toggleFreqDay(i),
-    }));
+    const freqDays = DAY_TOGGLE.map((label, idx) => {
+      const i = DAY_ORDER[idx];
+      return {
+        label, on: s.draftFreq.includes(i),
+        bg: s.draftFreq.includes(i) ? '#4285F4' : '#F1F3F4',
+        color: s.draftFreq.includes(i) ? '#FFFFFF' : '#5F6368',
+        onToggle: () => this.toggleFreqDay(i),
+      };
+    });
     const featuredColors = ['#4285F4', '#EA4335', '#FBBC04', '#34A853', '#9334E6'];
     const moreColors = ['#F4511E', '#FF7043', '#FDD835', '#C0CA33', '#00ACC1', '#00897B',
       '#1E88E5', '#3949AB', '#8E24AA', '#D81B60', '#6D4C41', '#546E7A', '#EC407A', '#7CB342',
@@ -1899,7 +2089,7 @@ class Component extends DCLogic {
       iconOptions, freqDays,
       draftTimesPerDay: s.draftTimesPerDay,
       incTimesPerDay: () => this.incTimesPerDay(), decTimesPerDay: () => this.decTimesPerDay(),
-      freqModeOptions: [ ['day','Por dia'], ['week','Por semana'], ['month','Por mês'] ].map(([key, label]) => ({
+      freqModeOptions: [ ['day','Por dia'], ['week','Por semana'], ['month','Por mês'], ['year','Por ano'] ].map(([key, label]) => ({
         label,
         border: s.draftFreqMode === key ? '#34A853' : '#E8EAED',
         bg: s.draftFreqMode === key ? '#E6F4EA' : '#FFFFFF',
@@ -1908,7 +2098,7 @@ class Component extends DCLogic {
       })),
       isFreqModeDay: s.draftFreqMode === 'day',
       isFreqModeCount: s.draftFreqMode !== 'day',
-      freqCountHeading: s.draftFreqMode === 'week' ? 'Vezes por semana' : 'Vezes por mês',
+      freqCountHeading: s.draftFreqMode === 'week' ? 'Vezes por semana' : (s.draftFreqMode === 'year' ? 'Vezes por ano' : 'Vezes por mês'),
       draftFreqCount: s.draftFreqCount,
       incFreqCount: () => this.incFreqCount(), decFreqCount: () => this.decFreqCount(),
       saveDraft: () => this.saveDraft(),
@@ -1925,6 +2115,11 @@ class Component extends DCLogic {
       pushToDrive: () => this.pushToDrive(), pullFromDrive: () => this.pullFromDrive(),
       syncing: s.syncing, hasSyncMessage: !!s.syncMessage, syncMessage: s.syncMessage, syncMessageColor: s.syncMessageColor,
       toastMsg: s.toastMsg, hasToastAction: !!s.toastAction, toastAction: s.toastAction,
+      confirmDeleteOpen: !!s.confirmDeleteTaskId,
+      confirmDeleteTaskTitle: (s.tasks.find(t => t.id === s.confirmDeleteTaskId) || {}).title || '',
+      cancelDeleteConfirm: () => this.cancelDeleteConfirm(),
+      confirmSkipOccurrence: () => this.confirmSkipOccurrence(),
+      confirmDeleteAllOccurrences: () => this.confirmDeleteAllOccurrences(),
     };
   }
 }
