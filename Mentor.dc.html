@@ -23,11 +23,16 @@
     ::-webkit-scrollbar-thumb { background: #DADCE0; border-radius: 3px; }
     .msym { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; user-select: none; }
     @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes habitPulse { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+    @keyframes cardFlash { 0% { background-color: #E6F4EA; } 100% { background-color: #FFFFFF; } }
+    @keyframes plusOneFloat { 0% { transform: translate(-50%, 0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(-50%, -22px); opacity: 0; } }
     @keyframes toastIn { 0% { transform: translate(-50%, 20px); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
     .mentor-shell { max-width: 480px; }
     .mentor-sidebar { display: none; }
     .mentor-bottomnav { display: flex; }
     .mentor-content { max-width: none; }
+    .mentor-fab-standalone { display: none; }
+    .mentor-fab-inline { display: flex; }
     @media (min-width: 900px) {
       .mentor-shell { max-width: 1200px; display: flex !important; flex-direction: row !important; }
       .mentor-sidebar { display: flex; }
@@ -35,7 +40,11 @@
       .mentor-main { flex: 1; min-width: 0; }
       .mentor-content { max-width: 720px; padding: 4px 32px 24px 32px !important; }
       .mentor-topbar { padding: 22px 32px 12px 32px !important; }
-      .mentor-fab { right: 32px !important; bottom: 32px !important; left: auto !important; transform: none !important; }
+      .mentor-fab-standalone { display: flex; }
+      .mentor-fab-inline { display: none; }
+    }
+    @media (min-width: 900px) {
+      .mentor-fab-standalone { right: 32px !important; bottom: 32px !important; left: auto !important; transform: none !important; }
       .mentor-toast { bottom: 32px !important; }
     }
   </style>
@@ -54,7 +63,7 @@
   <!-- Sidebar nav (desktop/wide viewports) -->
   <div class="mentor-sidebar" style="width:230px;flex-shrink:0;background:#FFFFFF;border-right:1px solid #E8EAED;flex-direction:column;padding:24px 12px;">
     <div style="font-size:19px;font-weight:700;color:#202124;padding:0 12px 22px 12px;">Mentor</div>
-    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="6">
+    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
       <button onClick="{{ n.onSelect }}" style="background:{{ n.sidebarBg }};border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:4px;text-align:left;">
         <span class="msym" style="color:{{ n.color }};font-size:21px;">{{ n.icon }}</span>
         <span style="font-size:14px;color:{{ n.color }};font-weight:{{ n.weight }};">{{ n.label }}</span>
@@ -74,9 +83,23 @@
       <sc-if value="{{ syncing }}">
         <span class="msym" style="color:#4285F4;font-size:20px;animation:pop 1s infinite alternate;">sync</span>
       </sc-if>
-      <button onClick="{{ openSettings }}" style="width:40px;height:40px;border-radius:20px;border:none;background:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.08);">
-        <span class="msym" style="color:#5F6368;">settings</span>
+      <button onClick="{{ toggleMenu }}" style="width:40px;height:40px;border-radius:20px;border:none;background:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.08);position:relative;">
+        <span class="msym" style="color:#5F6368;">menu</span>
       </button>
+      <sc-if value="{{ menuOpen }}">
+        <div style="position:fixed;inset:0;z-index:59;" onClick="{{ closeMenu }}"></div>
+        <div style="position:absolute;top:56px;right:20px;background:#FFFFFF;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.16);padding:6px;z-index:60;min-width:180px;">
+          <button onClick="{{ menuGoStats }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;color:#202124;font-size:14px;text-align:left;">
+            <span class="msym" style="font-size:19px;color:#5F6368;">bar_chart</span> Estatísticas
+          </button>
+          <button onClick="{{ menuGoLists }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;color:#202124;font-size:14px;text-align:left;">
+            <span class="msym" style="font-size:19px;color:#5F6368;">list</span> Listas
+          </button>
+          <button onClick="{{ menuGoSync }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;color:#202124;font-size:14px;text-align:left;">
+            <span class="msym" style="font-size:19px;color:#5F6368;">sync</span> Sincronização
+          </button>
+        </div>
+      </sc-if>
     </div>
   </div>
 
@@ -95,7 +118,12 @@
         </sc-if>
 
         <sc-if value="{{ hasOverdue }}">
-          <div style="font-size:13px;font-weight:700;color:#EA4335;text-transform:uppercase;letter-spacing:0.4px;margin:14px 4px 8px 4px;">Atrasadas</div>
+          <button onClick="{{ toggleOverdue }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:14px;">
+            <span style="font-size:13px;font-weight:700;color:#EA4335;text-transform:uppercase;letter-spacing:0.4px;">Atrasadas</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ overdueChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ overdueVisible }}">
           <sc-for list="{{ overdueTasks }}" as="t" hint-placeholder-count="2">
             <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;border:1px solid #FCE8E6;">
               <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;">
@@ -129,6 +157,7 @@
                     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
                       <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
                       <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                      <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
                       <sc-if value="{{ s.hasLink }}">
                         <a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;">
                           <span class="msym" style="font-size:14px;">link</span>Abrir link
@@ -143,21 +172,28 @@
         </sc-if>
 
         <sc-if value="{{ hasHabitsToday }}">
-          <div style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;margin:14px 4px 8px 4px;">Hábitos</div>
+          <button onClick="{{ toggleHabits }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:14px;">
+            <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Hábitos</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ habitsChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ habitsVisible }}">
           <sc-for list="{{ habitsToday }}" as="h" hint-placeholder-count="2">
-            <div style="background:#FFFFFF;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(0,0,0,0.06);">
-              <button onClick="{{ h.onToggle }}" style="width:44px;height:44px;border-radius:22px;border:2px solid {{ h.ringColor }};background:{{ h.fillColor }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;position:relative;">
+            <div style="background:#FFFFFF;border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 2px rgba(0,0,0,0.06);animation:{{ h.cardFlashAnim }};">
+              <button onClick="{{ h.onToggle }}" style="width:44px;height:44px;border-radius:22px;border:2px solid {{ h.ringColor }};background:{{ h.fillColor }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;position:relative;animation:{{ h.pulseAnim }};">
                 <span class="msym" style="color:{{ h.iconColor }};font-size:22px;">{{ h.icon }}</span>
+                <sc-if value="{{ h.showPlusOne }}">
+                  <span style="position:absolute;top:-2px;left:50%;font-size:13px;font-weight:700;color:{{ h.plusOneColor }};animation:plusOneFloat 0.6s ease-out forwards;pointer-events:none;">+1</span>
+                </sc-if>
               </button>
               <div style="flex:1;min-width:0;">
                 <div style="font-size:15px;font-weight:500;color:#202124;text-decoration:{{ h.strike }};">{{ h.name }}</div>
                 <div style="font-size:12px;color:#5F6368;margin-top:2px;display:flex;align-items:center;gap:6px;">
-                  <span>{{ h.listName }}<sc-if value="{{ h.showCount }}"> · {{ h.countLabel }}</sc-if></span>
-                  <sc-if value="{{ h.showCount }}">
-                    <button onClick="{{ h.onResetCount }}" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
-                      <span class="msym" style="font-size:15px;color:#9AA0A6;">restart_alt</span>
-                    </button>
-                  </sc-if>
+                  <span style="font-size:11px;font-weight:500;color:{{ h.listColor }};background:{{ h.listBg }};padding:2px 8px;border-radius:8px;">{{ h.listName }}</span>
+                  <sc-if value="{{ h.showCount }}"><span>{{ h.countLabel }}</span></sc-if>
+                  <button onClick="{{ h.onResetCount }}" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
+                    <span class="msym" style="font-size:15px;color:#9AA0A6;">restart_alt</span>
+                  </button>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:4px;background:#FEF7E0;padding:5px 10px;border-radius:10px;flex-shrink:0;">
@@ -169,7 +205,12 @@
         </sc-if>
 
         <sc-if value="{{ hasTasksToday }}">
-          <div style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;margin:14px 4px 8px 4px;">Tarefas</div>
+          <button onClick="{{ toggleTodayTasks }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:14px;">
+            <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Tarefas</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ todayTasksChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ todayTasksVisible }}">
           <sc-for list="{{ tasksToday }}" as="t" hint-placeholder-count="3">
             <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;">
               <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;">
@@ -211,6 +252,7 @@
                     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
                       <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
                       <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                      <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
                       <sc-if value="{{ s.hasLink }}">
                         <a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;">
                           <span class="msym" style="font-size:14px;">link</span>Abrir link
@@ -225,7 +267,12 @@
         </sc-if>
 
         <sc-if value="{{ hasUpcoming }}">
-          <div style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;margin:20px 4px 8px 4px;">Próximos 7 dias</div>
+          <button onClick="{{ toggleUpcoming }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:20px;">
+            <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Próximos 7 dias</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ upcomingChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ upcomingVisible }}">
           <sc-for list="{{ upcomingGroups }}" as="g" hint-placeholder-count="2">
             <div style="font-size:12px;font-weight:500;color:#9AA0A6;margin:10px 4px 6px 4px;">{{ g.label }}</div>
             <sc-for list="{{ g.tasks }}" as="t" hint-placeholder-count="1">
@@ -250,20 +297,37 @@
             <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Concluídas ({{ completedCount }})</span>
             <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ completedChevron }}</span>
           </button>
-          <sc-if value="{{ completedExpanded }}">
+        </sc-if>
+        <sc-if value="{{ completedVisible }}">
             <sc-for list="{{ completedTasks }}" as="t" hint-placeholder-count="2">
-              <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:12px;opacity:0.75;">
-                <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:{{ t.priorityColor }};flex-shrink:0;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;">
-                  <span class="msym" style="font-size:14px;color:#FFFFFF;">check</span>
-                </button>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:15px;color:#202124;text-decoration:line-through;">{{ t.title }}</div>
-                  <div style="font-size:11px;color:#9AA0A6;margin-top:3px;">{{ t.dateLabel }} · {{ t.listName }}</div>
+              <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);opacity:0.75;">
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px;">
+                  <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:{{ t.priorityColor }};flex-shrink:0;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;">
+                    <span class="msym" style="font-size:14px;color:#FFFFFF;">check</span>
+                  </button>
+                  <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ t.onExpand }}">
+                    <div style="font-size:15px;color:#202124;text-decoration:line-through;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <span>{{ t.title }}</span>
+                      <sc-if value="{{ t.hasSubtasks }}"><span style="font-size:12px;color:#9AA0A6;text-decoration:none;">{{ t.subtaskLabel }}</span></sc-if>
+                    </div>
+                    <div style="font-size:11px;color:#9AA0A6;margin-top:3px;">{{ t.dateLabel }} · {{ t.listName }}</div>
+                  </div>
+                  <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
                 </div>
-                <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
+                <sc-if value="{{ t.expanded }}">
+                  <div style="padding:0 16px 12px 50px;">
+                    <sc-for list="{{ t.subtasks }}" as="s" hint-placeholder-count="2">
+                      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
+                        <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
+                        <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                        <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
+                        <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;">link</a></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
-          </sc-if>
         </sc-if>
       </div>
     </sc-if>
@@ -279,7 +343,12 @@
         </sc-if>
 
         <sc-if value="{{ hasOverdue }}">
-          <div style="font-size:13px;font-weight:700;color:#EA4335;text-transform:uppercase;letter-spacing:0.4px;margin:0 4px 8px 4px;">Atrasadas</div>
+          <button onClick="{{ toggleOverdue }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;">
+            <span style="font-size:13px;font-weight:700;color:#EA4335;text-transform:uppercase;letter-spacing:0.4px;">Atrasadas</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ overdueChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ overdueVisible }}">
           <sc-for list="{{ overdueTasks }}" as="t" hint-placeholder-count="2">
             <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;border:1px solid #FCE8E6;">
               <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;">
@@ -309,6 +378,7 @@
                     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
                       <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
                       <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                      <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
                       <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;"><span class="msym" style="font-size:14px;">link</span>Abrir link</a></sc-if>
                     </div>
                   </sc-for>
@@ -318,8 +388,128 @@
           </sc-for>
         </sc-if>
 
+        <div style="margin-top:14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <button onClick="{{ prevTasksPeriod }}" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="msym" style="font-size:22px;color:#5F6368;">chevron_left</span></button>
+            <div style="flex:1;text-align:center;font-size:14px;font-weight:600;color:#202124;text-transform:capitalize;">{{ periodLabel }}</div>
+            <button onClick="{{ nextTasksPeriod }}" style="background:none;border:none;cursor:pointer;padding:4px;"><span class="msym" style="font-size:22px;color:#5F6368;">chevron_right</span></button>
+          </div>
+          <div style="display:flex;background:#F1F3F4;border-radius:10px;padding:3px;gap:3px;margin-bottom:14px;">
+            <button onClick="{{ setDayMode }}" style="flex:1;padding:8px;border-radius:8px;border:none;background:{{ dayModeBg }};color:{{ dayModeColor }};font-size:13px;font-weight:600;cursor:pointer;">Diária</button>
+            <button onClick="{{ setWeekMode }}" style="flex:1;padding:8px;border-radius:8px;border:none;background:{{ weekModeBg }};color:{{ weekModeColor }};font-size:13px;font-weight:600;cursor:pointer;">Semanal</button>
+            <button onClick="{{ setMonthMode }}" style="flex:1;padding:8px;border-radius:8px;border:none;background:{{ monthModeBg }};color:{{ monthModeColor }};font-size:13px;font-weight:600;cursor:pointer;">Mensal</button>
+          </div>
+
+          <sc-if value="{{ hasPeriodItems }}">
+            <sc-if value="{{ isPeriodDay }}">
+              <sc-for list="{{ periodDayCards }}" as="t" hint-placeholder-count="3">
+                <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;">
+                  <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;">
+                    <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:{{ t.checkFill }};margin-top:2px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"></button>
+                    <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ t.onExpand }}">
+                      <div style="font-size:15px;color:#202124;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span>{{ t.title }}</span>
+                        <sc-if value="{{ t.hasLink }}">
+                          <a href="{{ t.link }}" target="_blank" onClick="{{ t.onLinkClick }}" style="font-size:12.5px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;">
+                            <span class="msym" style="font-size:15px;">link</span>Abrir link
+                          </a>
+                        </sc-if>
+                      </div>
+                      <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                        <span style="font-size:11px;font-weight:500;color:{{ t.listColor }};background:{{ t.listBg }};padding:2px 8px;border-radius:8px;">{{ t.listName }}</span>
+                        <sc-if value="{{ t.hasSubtasks }}"><span style="font-size:12px;color:#9AA0A6;">{{ t.subtaskLabel }}</span></sc-if>
+                        <sc-if value="{{ t.isRepeating }}"><span class="msym" style="font-size:14px;color:#9AA0A6;">repeat</span></sc-if>
+                      </div>
+                      <sc-if value="{{ t.hasNotes }}"><div style="font-size:12.5px;color:#5F6368;margin-top:5px;line-height:1.4;">{{ t.notesPreview }}</div></sc-if>
+                    </div>
+                    <button onClick="{{ t.onEdit }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#9AA0A6;">edit</span></button>
+                    <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
+                  </div>
+                  <sc-if value="{{ t.expanded }}">
+                    <div style="padding:0 16px 14px 50px;">
+                      <sc-for list="{{ t.subtasks }}" as="s" hint-placeholder-count="2">
+                        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
+                          <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
+                          <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                      <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
+                          <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;"><span class="msym" style="font-size:14px;">link</span>Abrir link</a></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ isPeriodGroup }}">
+              <sc-for list="{{ periodGroups }}" as="g" hint-placeholder-count="2">
+                <div style="font-size:12px;font-weight:500;color:#9AA0A6;margin:10px 4px 6px 4px;text-transform:capitalize;">{{ g.label }}</div>
+                <sc-for list="{{ g.tasks }}" as="t" hint-placeholder-count="1">
+                  <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:12px;">
+                    <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:#FFFFFF;flex-shrink:0;cursor:pointer;padding:0;"></button>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:15px;color:#202124;">{{ t.title }}</div>
+                      <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                        <span style="font-size:11px;font-weight:500;color:{{ t.listColor }};background:{{ t.listBg }};padding:2px 8px;border-radius:8px;">{{ t.listName }}</span>
+                        <sc-if value="{{ t.isRepeating }}"><span class="msym" style="font-size:14px;color:#9AA0A6;">repeat</span></sc-if>
+                      </div>
+                    </div>
+                    <button onClick="{{ t.onEdit }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#9AA0A6;">edit</span></button>
+                    <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
+                  </div>
+                </sc-for>
+              </sc-for>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{ !hasPeriodItems }}">
+            <div style="text-align:center;padding:30px 20px;color:#9AA0A6;font-size:14px;">Nada agendado neste período.</div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ hasCompletedAll }}">
+          <button onClick="{{ toggleCompletedSection }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:16px;">
+            <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Concluídas ({{ completedTasksAll.length }})</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ completedChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ completedAllVisible }}">
+            <sc-for list="{{ completedTasksAll }}" as="t" hint-placeholder-count="2">
+              <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);opacity:0.75;">
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px;">
+                  <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:{{ t.priorityColor }};flex-shrink:0;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;">
+                    <span class="msym" style="font-size:14px;color:#FFFFFF;">check</span>
+                  </button>
+                  <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ t.onExpand }}">
+                    <div style="font-size:15px;color:#202124;text-decoration:line-through;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <span>{{ t.title }}</span>
+                      <sc-if value="{{ t.hasSubtasks }}"><span style="font-size:12px;color:#9AA0A6;text-decoration:none;">{{ t.subtaskLabel }}</span></sc-if>
+                    </div>
+                    <div style="font-size:11px;color:#9AA0A6;margin-top:3px;">{{ t.dateLabel }} · {{ t.listName }}</div>
+                  </div>
+                  <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
+                </div>
+                <sc-if value="{{ t.expanded }}">
+                  <div style="padding:0 16px 12px 50px;">
+                    <sc-for list="{{ t.subtasks }}" as="s" hint-placeholder-count="2">
+                      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
+                        <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
+                        <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                        <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
+                        <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;">link</a></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+        </sc-if>
+
         <sc-if value="{{ hasUndated }}">
-          <div style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;margin:14px 4px 8px 4px;">Sem data</div>
+          <button onClick="{{ toggleUndated }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:16px;">
+            <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Sem data</span>
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ undatedChevron }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ undatedVisible }}">
           <sc-for list="{{ undatedTasks }}" as="t" hint-placeholder-count="2">
             <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;">
               <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;">
@@ -348,6 +538,7 @@
                     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
                       <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
                       <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                      <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10.5px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
                       <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;"><span class="msym" style="font-size:14px;">link</span>Abrir link</a></sc-if>
                     </div>
                   </sc-for>
@@ -355,95 +546,9 @@
               </sc-if>
             </div>
           </sc-for>
-        </sc-if>
-
-        <sc-if value="{{ hasTasksToday }}">
-          <div style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;margin:14px 4px 8px 4px;">Hoje</div>
-          <sc-for list="{{ tasksToday }}" as="t" hint-placeholder-count="3">
-            <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;">
-              <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:12px;">
-                <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:{{ t.checkFill }};margin-top:2px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
-                  <sc-if value="{{ t.completed }}"><span class="msym" style="font-size:14px;color:#FFFFFF;">check</span></sc-if>
-                </button>
-                <div style="flex:1;min-width:0;cursor:pointer;" onClick="{{ t.onExpand }}">
-                  <div style="font-size:15px;color:#202124;text-decoration:{{ t.strike }};opacity:{{ t.opacity }};display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                    <span>{{ t.title }}</span>
-                    <sc-if value="{{ t.hasLink }}">
-                      <a href="{{ t.link }}" target="_blank" onClick="{{ t.onLinkClick }}" style="font-size:12.5px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;">
-                        <span class="msym" style="font-size:15px;">link</span>Abrir link
-                      </a>
-                    </sc-if>
-                  </div>
-                  <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                    <span style="font-size:11px;font-weight:500;color:{{ t.listColor }};background:{{ t.listBg }};padding:2px 8px;border-radius:8px;">{{ t.listName }}</span>
-                    <sc-if value="{{ t.hasSubtasks }}"><span style="font-size:12px;color:#9AA0A6;">{{ t.subtaskLabel }}</span></sc-if>
-                    <sc-if value="{{ t.isRepeating }}"><span class="msym" style="font-size:14px;color:#9AA0A6;">repeat</span></sc-if>
-                  </div>
-                  <sc-if value="{{ t.hasNotes }}"><div style="font-size:12.5px;color:#5F6368;margin-top:5px;line-height:1.4;">{{ t.notesPreview }}</div></sc-if>
-                </div>
-                <button onClick="{{ t.onEdit }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#9AA0A6;">edit</span></button>
-                <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
-              </div>
-              <sc-if value="{{ t.expanded }}">
-                <div style="padding:0 16px 14px 50px;">
-                  <sc-for list="{{ t.subtasks }}" as="s" hint-placeholder-count="2">
-                    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;flex-wrap:wrap;">
-                      <button onClick="{{ s.onToggle }}" style="width:16px;height:16px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
-                      <span style="font-size:13.5px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
-                      <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:12px;font-weight:500;color:#4285F4;display:inline-flex;align-items:center;gap:3px;text-decoration:none;"><span class="msym" style="font-size:14px;">link</span>Abrir link</a></sc-if>
-                    </div>
-                  </sc-for>
-                </div>
-              </sc-if>
-            </div>
-          </sc-for>
-        </sc-if>
-
-        <sc-if value="{{ hasUpcoming }}">
-          <div style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;margin:20px 4px 8px 4px;">Próximos 7 dias</div>
-          <sc-for list="{{ upcomingGroups }}" as="g" hint-placeholder-count="2">
-            <div style="font-size:12px;font-weight:500;color:#9AA0A6;margin:10px 4px 6px 4px;">{{ g.label }}</div>
-            <sc-for list="{{ g.tasks }}" as="t" hint-placeholder-count="1">
-              <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:12px;">
-                <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:#FFFFFF;flex-shrink:0;cursor:pointer;padding:0;"></button>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:15px;color:#202124;">{{ t.title }}</div>
-                  <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                    <span style="font-size:11px;font-weight:500;color:{{ t.listColor }};background:{{ t.listBg }};padding:2px 8px;border-radius:8px;">{{ t.listName }}</span>
-                    <sc-if value="{{ t.isRepeating }}"><span class="msym" style="font-size:14px;color:#9AA0A6;">repeat</span></sc-if>
-                  </div>
-                </div>
-                <button onClick="{{ t.onEdit }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#9AA0A6;">edit</span></button>
-                <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
-              </div>
-            </sc-for>
-          </sc-for>
-        </sc-if>
-
-        <sc-if value="{{ hasCompletedAll }}">
-          <button onClick="{{ toggleCompletedSection }}" style="width:100%;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 4px;margin-top:16px;">
-            <span style="font-size:13px;font-weight:700;color:#5F6368;text-transform:uppercase;letter-spacing:0.4px;">Concluídas ({{ completedTasksAll.length }})</span>
-            <span class="msym" style="font-size:18px;color:#9AA0A6;">{{ completedChevron }}</span>
-          </button>
-          <sc-if value="{{ completedExpanded }}">
-            <sc-for list="{{ completedTasksAll }}" as="t" hint-placeholder-count="2">
-              <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);padding:12px 16px;display:flex;align-items:center;gap:12px;opacity:0.75;">
-                <button onClick="{{ t.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ t.priorityColor }};background:{{ t.priorityColor }};flex-shrink:0;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;">
-                  <span class="msym" style="font-size:14px;color:#FFFFFF;">check</span>
-                </button>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:15px;color:#202124;text-decoration:line-through;">{{ t.title }}</div>
-                  <div style="font-size:11px;color:#9AA0A6;margin-top:3px;">{{ t.dateLabel }} · {{ t.listName }}</div>
-                </div>
-                <button onClick="{{ t.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;"><span class="msym" style="font-size:18px;color:#DADCE0;">delete</span></button>
-              </div>
-            </sc-for>
-          </sc-if>
         </sc-if>
       </div>
     </sc-if>
-
-    <!-- HABITS VIEW -->
     <sc-if value="{{ isHabits }}">
       <sc-if value="{{ hasNoHabits }}">
         <div style="text-align:center;padding:60px 20px;color:#9AA0A6;">
@@ -471,10 +576,13 @@
           </div>
           <div style="display:flex;gap:4px;margin-top:12px;">
             <sc-for list="{{ h.last14 }}" as="d" hint-placeholder-count="14">
-              <button onClick="{{ d.onToggle }}" style="flex:1;height:26px;border-radius:5px;border:none;background:{{ d.color }};color:{{ d.textColor }};font-size:9.5px;font-weight:600;cursor:pointer;padding:0;">{{ d.num }}</button>
+              <button onClick="{{ d.onToggle }}" style="flex:1;height:26px;border-radius:5px;border:none;background:{{ d.bgColor }};position:relative;overflow:hidden;cursor:pointer;padding:0;">
+                <div style="position:absolute;left:0;right:0;bottom:0;height:{{ d.fillPct }}%;background:{{ d.fillColor }};transition:height 0.2s ease-out;"></div>
+                <span style="position:relative;font-size:9.5px;font-weight:600;color:{{ d.textColor }};">{{ d.num }}</span>
+              </button>
             </sc-for>
           </div>
-          <div style="font-size:10.5px;color:#9AA0A6;margin-top:6px;">Toque em um dia para corrigir a marcação</div>
+          <div style="font-size:10.5px;color:#9AA0A6;margin-top:6px;">{{ h.correctionHint }}</div>
           <div style="display:flex;gap:8px;margin-top:12px;">
             <button onClick="{{ h.onEdit }}" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid #E8EAED;background:none;color:#5F6368;font-size:12.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
               <span class="msym" style="font-size:16px;">edit</span> Editar
@@ -519,28 +627,60 @@
           <div style="text-align:center;padding:30px 20px;color:#9AA0A6;font-size:14px;">Nada agendado neste dia.</div>
         </sc-if>
         <sc-for list="{{ selectedDayItems }}" as="it" hint-placeholder-count="2">
-          <div style="background:#FFFFFF;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 2px rgba(0,0,0,0.06);">
-            <button onClick="{{ it.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ it.ringColor }};background:{{ it.fill }};display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;">
-              <sc-if value="{{ it.done }}"><span class="msym" style="font-size:13px;color:#FFFFFF;">check</span></sc-if>
-            </button>
-            <span class="msym" style="font-size:18px;color:{{ it.color }};">{{ it.icon }}</span>
-            <span style="font-size:14px;color:#202124;flex:1;text-decoration:{{ it.strike }};">{{ it.label }}</span>
-            <sc-if value="{{ it.showCount }}">
-              <span style="font-size:11px;font-weight:700;color:#B06000;background:#FEF7E0;padding:2px 8px;border-radius:8px;">{{ it.dayCountLabel }}</span>
-              <sc-if value="{{ it.hasGoalLabel }}">
-                <span style="font-size:11px;font-weight:700;color:#1967D2;background:#E8F0FE;padding:2px 8px;border-radius:8px;">{{ it.goalCountLabel }}</span>
+          <div style="background:#FFFFFF;border-radius:12px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);animation:{{ it.cardFlashAnim }};overflow:hidden;">
+            <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <sc-if value="{{ it.isCheckboxType }}">
+                <button onClick="{{ it.onToggle }}" style="width:22px;height:22px;border-radius:11px;border:2px solid {{ it.ringColor }};background:{{ it.fill }};display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;">
+                  <sc-if value="{{ it.done }}"><span class="msym" style="font-size:13px;color:#FFFFFF;">check</span></sc-if>
+                </button>
               </sc-if>
               <sc-if value="{{ it.isHabit }}">
-                <span style="font-size:10px;font-weight:700;color:#5F6368;background:#F1F3F4;width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ it.freqBadge }}</span>
+                <button onClick="{{ it.onToggle }}" style="width:34px;height:34px;border-radius:17px;border:2px solid {{ it.ringColor }};background:{{ it.fill }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;position:relative;animation:{{ it.pulseAnim }};">
+                  <span class="msym" style="color:{{ it.iconColor }};font-size:17px;">{{ it.icon }}</span>
+                  <sc-if value="{{ it.showPlusOne }}">
+                    <span style="position:absolute;top:-14px;left:50%;font-size:12px;font-weight:700;color:{{ it.plusOneColor }};animation:plusOneFloat 0.6s ease-out forwards;pointer-events:none;">+1</span>
+                  </sc-if>
+                </button>
               </sc-if>
-              <button onClick="{{ it.onResetCount }}" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
-                <span class="msym" style="font-size:15px;color:#9AA0A6;">restart_alt</span>
-              </button>
-            </sc-if>
-            <span style="font-size:11px;color:#9AA0A6;background:#F1F3F4;padding:2px 8px;border-radius:8px;">{{ it.kind }}</span>
-            <sc-if value="{{ it.isTask }}">
-              <button onClick="{{ it.onEdit }}" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="msym" style="font-size:17px;color:#9AA0A6;">edit</span></button>
-              <button onClick="{{ it.onDelete }}" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="msym" style="font-size:17px;color:#DADCE0;">delete</span></button>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;cursor:pointer;" onClick="{{ it.onExpand }}">
+                <span style="font-size:14px;color:#202124;text-decoration:{{ it.strike }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px;">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ it.label }}</span>
+                  <sc-if value="{{ it.hasSubtasks }}"><span style="font-size:11px;color:#9AA0A6;text-decoration:none;flex-shrink:0;">{{ it.subtaskLabel }}</span></sc-if>
+                </span>
+                <sc-if value="{{ it.showDoneDate }}">
+                  <span style="font-size:10.5px;color:#9AA0A6;">Concluída em {{ it.doneDateLabel }}</span>
+                </sc-if>
+              </span>
+              <sc-if value="{{ it.hasDayOnlyLabel }}">
+                <span style="font-size:11px;font-weight:700;color:#1967D2;background:#E8F0FE;padding:2px 8px;border-radius:8px;flex-shrink:0;white-space:nowrap;">{{ it.dayOnlyLabel }}</span>
+              </sc-if>
+              <sc-if value="{{ it.showCount }}">
+                <span style="font-size:11px;font-weight:700;color:#B06000;background:#FEF7E0;padding:2px 8px;border-radius:8px;flex-shrink:0;white-space:nowrap;">{{ it.dayCountLabel }}</span>
+              </sc-if>
+              <sc-if value="{{ it.isHabit }}">
+                <button onClick="{{ it.onResetCount }}" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;flex-shrink:0;">
+                  <span class="msym" style="font-size:15px;color:#9AA0A6;">restart_alt</span>
+                </button>
+              </sc-if>
+              <sc-if value="{{ it.isTask }}">
+                <button onClick="{{ it.onEdit }}" style="background:none;border:none;cursor:pointer;padding:2px;flex-shrink:0;"><span class="msym" style="font-size:17px;color:#9AA0A6;">edit</span></button>
+                <button onClick="{{ it.onDelete }}" style="background:none;border:none;cursor:pointer;padding:2px;flex-shrink:0;"><span class="msym" style="font-size:17px;color:#DADCE0;">delete</span></button>
+              </sc-if>
+              <sc-if value="{{ it.isOccurrence }}">
+                <button onClick="{{ it.onDelete }}" style="background:none;border:none;cursor:pointer;padding:2px;flex-shrink:0;"><span class="msym" style="font-size:17px;color:#DADCE0;">delete</span></button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ it.expanded }}">
+              <div style="padding:0 14px 10px 46px;">
+                <sc-for list="{{ it.subtasks }}" as="s" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap;">
+                    <button onClick="{{ s.onToggle }}" style="width:15px;height:15px;border-radius:4px;border:1.5px solid #DADCE0;background:{{ s.fill }};cursor:pointer;flex-shrink:0;padding:0;"></button>
+                    <span style="font-size:13px;color:#5F6368;text-decoration:{{ s.strike }};">{{ s.title }}</span>
+                    <sc-if value="{{ s.showDoneDate }}"><span style="font-size:10px;color:#9AA0A6;">· concl. {{ s.doneDateLabel }}</span></sc-if>
+                    <sc-if value="{{ s.hasLink }}"><a href="{{ s.link }}" target="_blank" onClick="{{ s.onLinkClick }}" style="font-size:11px;font-weight:500;color:#4285F4;">link</a></sc-if>
+                  </div>
+                </sc-for>
+              </div>
             </sc-if>
           </div>
         </sc-for>
@@ -636,44 +776,18 @@
     <!-- LISTS VIEW -->
     <sc-if value="{{ isLists }}">
       <sc-for list="{{ listsWithCounts }}" as="l" hint-placeholder-count="3">
-        <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);overflow:hidden;">
-          <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;" onClick="{{ l.onToggle }}">
-            <div style="width:12px;height:12px;border-radius:6px;background:{{ l.color }};flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:15px;font-weight:500;color:#202124;">{{ l.name }}</div>
-              <div style="font-size:12px;color:#5F6368;">{{ l.countLabel }}</div>
-            </div>
-            <span class="msym" style="font-size:20px;color:#9AA0A6;">{{ l.chevron }}</span>
-            <button onClick="{{ l.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;">
-              <span class="msym" style="font-size:18px;color:#DADCE0;">delete</span>
-            </button>
+        <div style="background:#FFFFFF;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);padding:14px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:14px;height:14px;border-radius:7px;background:{{ l.color }};flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:500;color:#202124;">{{ l.name }}</div>
+            <div style="font-size:12px;color:#5F6368;">{{ l.countLabel }}</div>
           </div>
-          <sc-if value="{{ l.expanded }}">
-            <div style="padding:0 16px 14px 16px;">
-              <sc-if value="{{ l.itemsEmpty }}">
-                <div style="font-size:13px;color:#9AA0A6;padding:6px 0 6px 24px;">Nada nesta lista ainda.</div>
-              </sc-if>
-              <sc-for list="{{ l.items }}" as="it" hint-placeholder-count="2">
-                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #F1F3F4;">
-                  <sc-if value="{{ it.isTask }}">
-                    <button onClick="{{ it.onToggle }}" style="width:20px;height:20px;border-radius:10px;border:2px solid {{ it.ringColor }};background:{{ it.fill }};display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0;">
-                      <sc-if value="{{ it.done }}"><span class="msym" style="font-size:12px;color:#FFFFFF;">check</span></sc-if>
-                    </button>
-                  </sc-if>
-                  <span class="msym" style="font-size:17px;color:{{ it.color }};">{{ it.icon }}</span>
-                  <span style="font-size:14px;color:#202124;flex:1;text-decoration:{{ it.strike }};">{{ it.label }}</span>
-                  <sc-if value="{{ it.isRepeating }}">
-                    <span class="msym" style="font-size:15px;color:#9AA0A6;">repeat</span>
-                  </sc-if>
-                  <span style="font-size:11px;color:#9AA0A6;background:#F1F3F4;padding:2px 8px;border-radius:8px;">{{ it.kind }}</span>
-                  <sc-if value="{{ it.isTask }}">
-                    <button onClick="{{ it.onEdit }}" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="msym" style="font-size:16px;color:#9AA0A6;">edit</span></button>
-                    <button onClick="{{ it.onDelete }}" style="background:none;border:none;cursor:pointer;padding:2px;"><span class="msym" style="font-size:16px;color:#DADCE0;">delete</span></button>
-                  </sc-if>
-                </div>
-              </sc-for>
-            </div>
-          </sc-if>
+          <button onClick="{{ l.onEdit }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;">
+            <span class="msym" style="font-size:18px;color:#9AA0A6;">palette</span>
+          </button>
+          <button onClick="{{ l.onDelete }}" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;">
+            <span class="msym" style="font-size:18px;color:#DADCE0;">delete</span>
+          </button>
         </div>
       </sc-for>
       <button onClick="{{ openNewList }}" style="width:100%;padding:14px;border-radius:14px;border:1.5px dashed #DADCE0;background:none;color:#4285F4;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
@@ -683,21 +797,27 @@
 
   </div>
 
-  <!-- Reserves real layout space so the FAB never lands on top of a rendered row -->
+  <!-- Desktop floating FAB -->
   <sc-if value="{{ showFab }}">
-    <div style="flex-shrink:0;height:88px;"></div>
-  </sc-if>
-
-  <!-- FAB -->
-  <sc-if value="{{ showFab }}">
-    <button class="mentor-fab" onClick="{{ openAdd }}" style="position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:56px;height:56px;border-radius:28px;background:#4285F4;border:none;box-shadow:0 4px 12px rgba(66,133,244,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:40;">
+    <button class="mentor-fab-standalone" onClick="{{ openAdd }}" style="position:absolute;left:50%;transform:translateX(-50%);bottom:96px;width:56px;height:56px;border-radius:28px;background:#4285F4;border:none;box-shadow:0 4px 12px rgba(66,133,244,0.4);align-items:center;justify-content:center;cursor:pointer;z-index:40;">
       <span class="msym" style="color:#FFFFFF;font-size:26px;">add</span>
     </button>
   </sc-if>
 
-  <!-- Bottom nav (mobile/narrow viewports) -->
-  <div class="mentor-bottomnav" style="flex-shrink:0;background:#FFFFFF;border-top:1px solid #E8EAED;padding:8px 4px calc(8px + env(safe-area-inset-bottom)) 4px;">
-    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+  <!-- Bottom nav (mobile/narrow viewports), FAB centered inline -->
+  <div class="mentor-bottomnav" style="flex-shrink:0;background:#FFFFFF;border-top:1px solid #E8EAED;padding:8px 4px calc(8px + env(safe-area-inset-bottom)) 4px;align-items:center;">
+    <sc-for list="{{ navItemsLeft }}" as="n" hint-placeholder-count="2">
+      <button onClick="{{ n.onSelect }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;">
+        <span class="msym" style="color:{{ n.color }};font-size:22px;">{{ n.icon }}</span>
+        <span style="font-size:10px;color:{{ n.color }};font-weight:{{ n.weight }};">{{ n.label }}</span>
+      </button>
+    </sc-for>
+    <sc-if value="{{ showFab }}">
+      <button class="mentor-fab-inline" onClick="{{ openAdd }}" style="flex-shrink:0;width:48px;height:48px;border-radius:24px;background:#4285F4;border:none;box-shadow:0 3px 10px rgba(66,133,244,0.4);align-items:center;justify-content:center;cursor:pointer;transform:translateY(-10px);margin:0 2px;">
+        <span class="msym" style="color:#FFFFFF;font-size:24px;">add</span>
+      </button>
+    </sc-if>
+    <sc-for list="{{ navItemsRight }}" as="n" hint-placeholder-count="2">
       <button onClick="{{ n.onSelect }}" style="flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;">
         <span class="msym" style="color:{{ n.color }};font-size:22px;">{{ n.icon }}</span>
         <span style="font-size:10px;color:{{ n.color }};font-weight:{{ n.weight }};">{{ n.label }}</span>
@@ -848,7 +968,7 @@
   <sc-if value="{{ newListOpen }}">
     <div style="position:absolute;inset:0;background:rgba(32,33,36,0.4);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;" onClick="{{ closeNewList }}">
       <div style="background:#FFFFFF;width:100%;border-radius:18px;padding:20px;" onClick="{{ stopProp }}">
-        <div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:14px;">Nova lista</div>
+        <div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:14px;">{{ listModalTitle }}</div>
         <input value="{{ newListName }}" onChange="{{ onNewListNameChange }}" placeholder="Nome da lista" style="width:100%;border:1.5px solid #E8EAED;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;margin-bottom:14px;">
         <div style="display:flex;gap:10px;margin-bottom:16px;">
           <sc-for list="{{ colorOptions }}" as="co" hint-placeholder-count="5">
@@ -861,7 +981,7 @@
             <button onClick="{{ mc.onSelect }}" style="aspect-ratio:1;border-radius:14px;background:{{ mc.hex }};border:2px solid {{ mc.border }};cursor:pointer;"></button>
           </sc-for>
         </div>
-        <button onClick="{{ saveNewList }}" style="width:100%;padding:13px;border-radius:12px;border:none;background:#4285F4;color:#FFFFFF;font-size:14px;font-weight:500;cursor:pointer;">Criar</button>
+        <button onClick="{{ saveNewList }}" style="width:100%;padding:13px;border-radius:12px;border:none;background:#4285F4;color:#FFFFFF;font-size:14px;font-weight:500;cursor:pointer;">{{ listModalAction }}</button>
       </div>
     </div>
   </sc-if>
@@ -953,6 +1073,7 @@ const ICONS = ['directions_run','local_drink','menu_book','fitness_center','bedt
   'medication_liquid'];
 
 const WEEKDAY_LABELS = ['S','T','Q','Q','S','S','D'];
+const MONTH_ABBR = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const DAY_TOGGLE = ['S','T','Q','Q','S','S','D'];
 const DAY_ORDER = [1,2,3,4,5,6,0];
 
@@ -985,6 +1106,13 @@ function periodSums(h, unit) {
   });
   return sums;
 }
+const FREQ_ORDER = { day: 0, week: 1, month: 2, year: 3 };
+function habitRepCount(h) {
+  return (h.freqMode || 'day') === 'day' ? (h.timesPerDay || 1) : (h.freqCount || 1);
+}
+function sortByFreq(habits) {
+  return habits.slice().sort((a, b) => (FREQ_ORDER[a.freqMode || 'day'] ?? 0) - (FREQ_ORDER[b.freqMode || 'day'] ?? 0) || habitRepCount(b) - habitRepCount(a));
+}
 function habitScheduledOn(h, iso) {
   const mode = h.freqMode || 'day';
   if (mode !== 'day') return true;
@@ -992,8 +1120,9 @@ function habitScheduledOn(h, iso) {
 }
 function habitDoneOn(h, iso) {
   const mode = h.freqMode || 'day';
-  const need = mode === 'day' ? (h.timesPerDay || 1) : 1;
-  return (h.history[iso] || 0) >= need;
+  if (mode === 'day') return (h.history[iso] || 0) >= (h.timesPerDay || 1);
+  const sums = periodSums(h, mode);
+  return (sums[periodKeyOf(iso, mode)] || 0) >= (h.freqCount || 1);
 }
 function nextDueDate(iso, repeat) {
   if (repeat === 'daily') return addDays(iso, 1);
@@ -1012,6 +1141,8 @@ class Component extends DCLogic {
     selectedDate: todayISO(),
     calMonth: new Date().getMonth(),
     calYear: new Date().getFullYear(),
+    tasksViewMode: 'day',
+    tasksPeriodOffset: 0,
     expandedTaskId: null,
     modalOpen: false,
     draftType: 'task',
@@ -1035,10 +1166,13 @@ class Component extends DCLogic {
     newListOpen: false,
     newListName: '',
     newListColor: '#4285F4',
+    editingListId: null,
     settingsOpen: false,
+    menuOpen: false,
     statsPeriod: 'week',
     statsOffset: 0,
     completedExpanded: false,
+    collapsedSections: {},
     expandedListId: null,
     driveClientId: '',
     driveClientIdDraft: '',
@@ -1057,6 +1191,7 @@ class Component extends DCLogic {
       if (this.state.modalOpen) { this.setState({ modalOpen: false }); return; }
       if (this.state.newListOpen) { this.setState({ newListOpen: false }); return; }
       if (this.state.settingsOpen) { this.setState({ settingsOpen: false }); return; }
+      if (this.state.menuOpen) { this.setState({ menuOpen: false }); return; }
     };
     window.addEventListener('popstate', this._onPopState);
     try {
@@ -1128,22 +1263,80 @@ class Component extends DCLogic {
   goView(v) { this.setState({ view: v }); }
 
   // ---------- Task ops ----------
+  deleteCompletedOccurrence(occurrenceId) {
+    const idx = this.state.completedOccurrences.findIndex(o => o.id === occurrenceId);
+    if (idx === -1) return;
+    const removed = this.state.completedOccurrences[idx];
+    this.setState(s => ({ completedOccurrences: s.completedOccurrences.filter(o => o.id !== occurrenceId) }), () => this.persist());
+    this.showUndoToast('Marcação excluída.', () => {
+      this.setState(s => {
+        const list = s.completedOccurrences.slice();
+        list.splice(Math.min(idx, list.length), 0, removed);
+        return { completedOccurrences: list };
+      }, () => this.persist());
+      this.showToast('Restaurado.');
+    });
+  }
+  undoCompletedOccurrence(occurrenceId) {
+    const occ = this.state.completedOccurrences.find(o => o.id === occurrenceId);
+    if (!occ) return;
+    const task = this.state.tasks.find(t => t.id === occ.taskId);
+    const taskOccs = this.state.completedOccurrences.filter(o => o.taskId === occ.taskId);
+    const isLatest = taskOccs.length && taskOccs[taskOccs.length - 1].id === occurrenceId;
+    if (!task || !isLatest) {
+      this.setState({ syncMessage: 'Só é possível desfazer a marcação mais recente desta tarefa.', syncMessageColor: '#D93025', settingsOpen: false });
+      this.showToast('Só é possível desfazer a ocorrência mais recente.');
+      return;
+    }
+    const isUndated = !(task.repeat && task.repeat !== 'none');
+    this.setState(s => ({
+      tasks: s.tasks.map(t => t.id === occ.taskId ? (isUndated ? {
+        ...t, dueDate: null, completed: false, undatedCompletedDate: null, subtasks: occ.subtasks || t.subtasks,
+      } : {
+        ...t, dueDate: occ.date, completed: false,
+        completedLog: (t.completedLog || []).filter(d => d !== occ.date),
+        subtasks: occ.subtasks || t.subtasks,
+      }) : t),
+      completedOccurrences: s.completedOccurrences.filter(o => o.id !== occurrenceId),
+    }), () => this.persist());
+    this.showToast('Marcação desfeita.');
+  }
   toggleTask(id) {
     const task = this.state.tasks.find(t => t.id === id);
     const willCompleteRecurring = task && !task.completed && task.repeat && task.repeat !== 'none';
+    const willCompleteUndated = task && !task.completed && !task.dueDate;
+    const today = todayISO();
     const occurrence = willCompleteRecurring ? {
-      id: uid(), taskId: task.id, title: task.title, listId: task.listId, date: task.dueDate,
-    } : null;
+      id: uid(), taskId: task.id, title: task.title, listId: task.listId, date: task.dueDate, completedDate: today,
+      subtasks: (task.subtasks || []).map(st => ({ ...st })),
+    } : (willCompleteUndated ? {
+      id: uid(), taskId: task.id, title: task.title, listId: task.listId, date: today, completedDate: today, isUndated: true,
+      subtasks: (task.subtasks || []).map(st => ({ ...st })),
+    } : null);
     this.setState(s => ({
       tasks: s.tasks.map(t => {
         if (t.id !== id) return t;
         if (!t.completed && t.repeat && t.repeat !== 'none') {
           const completedLog = [...(t.completedLog || []), t.dueDate];
-          return { ...t, dueDate: nextDueDate(t.dueDate, t.repeat), completed: false, completedLog };
+          const freshSubtasks = (t.subtasks || []).map(st => ({ ...st, completed: false, completedDate: null }));
+          return { ...t, dueDate: nextDueDate(t.dueDate, t.repeat), completed: false, completedLog, subtasks: freshSubtasks };
         }
-        return { ...t, completed: !t.completed };
+        if (!t.completed && !t.dueDate) {
+          return { ...t, completed: true, undatedCompletedDate: today };
+        }
+        if (t.completed && !t.dueDate && t.undatedCompletedDate) {
+          return { ...t, completed: false, undatedCompletedDate: null };
+        }
+        if (!t.completed) {
+          return { ...t, completed: true, completedDate: today };
+        }
+        return { ...t, completed: false, completedDate: null };
       }),
-      completedOccurrences: occurrence ? [...s.completedOccurrences, occurrence] : s.completedOccurrences,
+      completedOccurrences: occurrence
+        ? [...s.completedOccurrences, occurrence]
+        : (task && task.completed && !task.dueDate
+          ? s.completedOccurrences.filter(o => !(o.taskId === task.id && o.date === task.undatedCompletedDate))
+          : s.completedOccurrences),
     }), () => this.persist());
   }
   requestDeleteTask(id) {
@@ -1188,9 +1381,18 @@ class Component extends DCLogic {
     this.setState(s => ({ expandedTaskId: s.expandedTaskId === id ? null : id }));
   }
   toggleSubtask(taskId, subId) {
+    const today = todayISO();
     this.setState(s => ({
       tasks: s.tasks.map(t => t.id !== taskId ? t : {
-        ...t, subtasks: t.subtasks.map(st => st.id === subId ? { ...st, completed: !st.completed } : st)
+        ...t, subtasks: t.subtasks.map(st => st.id === subId ? { ...st, completed: !st.completed, completedDate: !st.completed ? today : null } : st)
+      })
+    }), () => this.persist());
+  }
+  toggleOccurrenceSubtask(occurrenceId, subId) {
+    const today = todayISO();
+    this.setState(s => ({
+      completedOccurrences: s.completedOccurrences.map(o => o.id !== occurrenceId ? o : {
+        ...o, subtasks: (o.subtasks || []).map(st => st.id === subId ? { ...st, completed: !st.completed, completedDate: !st.completed ? today : null } : st)
       })
     }), () => this.persist());
   }
@@ -1207,7 +1409,13 @@ class Component extends DCLogic {
   }
 
   // ---------- Habit ops ----------
+  pulseHabit(id) {
+    this.setState({ pulsingHabitId: id });
+    clearTimeout(this._pulseT);
+    this._pulseT = setTimeout(() => this.setState({ pulsingHabitId: null }), 620);
+  }
   incrementHabitToday(id) {
+    this.pulseHabit(id);
     const today = todayISO();
     this.setState(s => ({
       habits: s.habits.map(h => {
@@ -1250,7 +1458,38 @@ class Component extends DCLogic {
       })
     }), () => this.persist());
   }
+  pulseHabitCell(id, key) {
+    this.setState({ pulsingHabitId: id, pulsingCellKey: key });
+    clearTimeout(this._pulseCellT);
+    this._pulseCellT = setTimeout(() => this.setState({ pulsingCellKey: null }), 620);
+  }
+  incrementHabitCorrection(id, key, target, mode) {
+    this.setState(s => ({
+      habits: s.habits.map(h => {
+        if (h.id !== id) return h;
+        const history = { ...h.history };
+        if (!mode || mode === 'day') {
+          const cur = history[key] || 0;
+          const next = cur >= target ? 0 : cur + 1;
+          if (next === 0) delete history[key]; else history[key] = next;
+          return { ...h, history };
+        }
+        const periodKey = periodKeyOf(key, mode);
+        let cur = 0;
+        Object.keys(history).forEach(k => { if (periodKeyOf(k, mode) === periodKey) cur += history[k] || 0; });
+        const next = cur >= target ? 0 : cur + 1;
+        Object.keys(history).forEach(k => { if (periodKeyOf(k, mode) === periodKey) delete history[k]; });
+        if (next > 0) history[key] = next;
+        return { ...h, history };
+      })
+    }), () => this.persist());
+  }
   resetHabitCountOn(id, iso) {
+    const habit = this.state.habits.find(h => h.id === id);
+    if (!habit || !(habit.history[iso] || 0)) {
+      this.showToast('Nada a resetar: este hábito não tem marcação nesse dia.');
+      return;
+    }
     this.setState(s => ({
       habits: s.habits.map(h => {
         if (h.id !== id) return h;
@@ -1261,6 +1500,7 @@ class Component extends DCLogic {
     }), () => this.persist());
   }
   incrementHabitOn(id, iso) {
+    this.pulseHabit(id);
     this.setState(s => ({
       habits: s.habits.map(h => {
         if (h.id !== id) return h;
@@ -1278,6 +1518,9 @@ class Component extends DCLogic {
     const prevHistory = habit ? { ...habit.history } : {};
     this.setState(s => ({ habits: s.habits.map(h => h.id === id ? { ...h, history: {} } : h) }), () => this.persist());
     this.showUndoToast('Hábito resetado.', () => this.undoResetHabit(id, prevHistory));
+  }
+  toggleSection(key) {
+    this.setState(s => ({ collapsedSections: { ...s.collapsedSections, [key]: !s.collapsedSections[key] } }));
   }
   undoResetHabit(id, prevHistory) {
     this.setState(s => ({ habits: s.habits.map(h => h.id === id ? { ...h, history: prevHistory } : h) }), () => this.persist());
@@ -1319,11 +1562,17 @@ class Component extends DCLogic {
   setStatsPeriod(p) { this.setState({ statsPeriod: p, statsOffset: 0 }); }
   prevStatsPeriod() { this.setState(s => ({ statsOffset: s.statsOffset + 1 })); }
   nextStatsPeriod() { this.setState(s => ({ statsOffset: Math.max(0, s.statsOffset - 1) })); }
-  openNewList() { this.setState({ newListOpen: true, newListName: '', newListColor: '#4285F4' }); this.pushOverlayHistory(); }
-  closeNewList() { this.setState({ newListOpen: false }); this.popOverlayHistoryIfNeeded(); }
+  openNewList() { this.setState({ newListOpen: true, newListName: '', newListColor: '#4285F4', editingListId: null }); this.pushOverlayHistory(); }
+  editList(list) { this.setState({ newListOpen: true, newListName: list.name, newListColor: list.color, editingListId: list.id }); this.pushOverlayHistory(); }
+  closeNewList() { this.setState({ newListOpen: false, editingListId: null }); this.popOverlayHistoryIfNeeded(); }
   saveNewList() {
     const name = this.state.newListName.trim();
     if (!name) return;
+    if (this.state.editingListId) {
+      const id = this.state.editingListId;
+      this.setState(s => ({ lists: s.lists.map(l => l.id === id ? { ...l, name, color: s.newListColor } : l), newListOpen: false, editingListId: null }), () => this.persist());
+      return;
+    }
     const list = { id: uid(), name, color: this.state.newListColor };
     this.setState(s => ({ lists: [...s.lists, list], newListOpen: false }), () => this.persist());
   }
@@ -1331,7 +1580,7 @@ class Component extends DCLogic {
   // ---------- Modal (add/edit) ----------
   openAdd() {
     this.setState({
-      modalOpen: true, editingId: null, draftType: 'task', draftTitle: '',
+      modalOpen: true, editingId: null, draftType: this.state.view === 'habits' ? 'habit' : 'task', draftTitle: '',
       draftListId: (this.state.lists[0] && this.state.lists[0].id) || 'l1',
       draftPriority: 'none', draftDueDate: this.state.view === 'calendar' ? (this.state.selectedDate || todayISO()) : '', draftRepeat: 'none',
       draftNotes: '', draftLink: '',
@@ -1421,10 +1670,18 @@ class Component extends DCLogic {
     this.setState(s => { let m = s.calMonth + 1, y = s.calYear; if (m > 11) { m = 0; y++; } return { calMonth: m, calYear: y }; });
   }
   selectDay(iso) { this.setState({ selectedDate: iso }); }
+  setTasksViewMode(mode) { this.setState({ tasksViewMode: mode, tasksPeriodOffset: 0 }); }
+  prevTasksPeriod() { this.setState(s => ({ tasksPeriodOffset: s.tasksPeriodOffset - 1 })); }
+  nextTasksPeriod() { this.setState(s => ({ tasksPeriodOffset: s.tasksPeriodOffset + 1 })); }
 
   // ---------- Google Drive sync ----------
   openSettings() { this.setState({ settingsOpen: true, driveClientIdDraft: this.state.driveClientId, syncMessage: '' }); this.pushOverlayHistory(); }
   closeSettings() { this.setState({ settingsOpen: false }); this.popOverlayHistoryIfNeeded(); }
+  toggleMenu() {
+    if (this.state.menuOpen) { this.setState({ menuOpen: false }); this.popOverlayHistoryIfNeeded(); }
+    else { this.setState({ menuOpen: true }); this.pushOverlayHistory(); }
+  }
+  closeMenu() { this.setState({ menuOpen: false }); this.popOverlayHistoryIfNeeded(); }
 
   persistDriveSettings() {
     try {
@@ -1517,6 +1774,8 @@ class Component extends DCLogic {
           id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
           fill: st.completed ? '#4285F4' : '#FFFFFF',
           hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
           onLinkClick: (e) => e.stopPropagation(),
           onToggle: () => this.toggleSubtask(t.id, st.id),
         })),
@@ -1549,6 +1808,8 @@ class Component extends DCLogic {
           id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
           fill: st.completed ? '#4285F4' : '#FFFFFF',
           hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
           onLinkClick: (e) => e.stopPropagation(),
           onToggle: () => this.toggleSubtask(t.id, st.id),
         })),
@@ -1584,30 +1845,61 @@ class Component extends DCLogic {
     }
 
     // ----- Completed tasks -----
-    const completedRaw = s.tasks.filter(t => t.completed && t.dueDate).sort((a, b) => (b.dueDate || '').localeCompare(a.dueDate || ''));
+    const completedRaw = s.tasks.filter(t => t.completed && (t.completedDate === today || (!t.dueDate && t.undatedCompletedDate === today))).sort((a, b) => (b.dueDate || '').localeCompare(a.dueDate || ''));
     const completedTasks = completedRaw.map(t => {
       const list = listMap[t.listId] || { name: '—', color: '#9AA0A6' };
+      const total = (t.subtasks || []).length;
+      const doneCount = (t.subtasks || []).filter(st => st.completed).length;
       return {
+        id: t.id,
         title: t.title,
         priorityColor: priorityColors[t.priority] === '#DADCE0' ? '#34A853' : (priorityColors[t.priority] || '#34A853'),
-        dateLabel: new Date(t.dueDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }),
+        dateLabel: t.dueDate ? new Date(t.dueDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : 'SEM DATA',
         listName: list.name,
+        hasSubtasks: total > 0, subtaskLabel: doneCount + '/' + total,
+        expanded: s.expandedTaskId === t.id,
+        onExpand: () => this.toggleExpand(t.id),
+        subtasks: (t.subtasks || []).map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleSubtask(t.id, st.id),
+        })),
         onToggle: () => this.toggleTask(t.id),
         onDelete: () => this.deleteTask(t.id),
       };
     });
-    const completedAllRaw = s.tasks.filter(t => t.completed).sort((a, b) => (b.dueDate || '').localeCompare(a.dueDate || ''));
-    const completedTasksAll = completedAllRaw.map(t => {
-      const list = listMap[t.listId] || { name: '—', color: '#9AA0A6' };
+    const completedOccToday = s.completedOccurrences.filter(o => (o.completedDate || o.date) === today).map(o => {
+      const list = listMap[o.listId] || { name: '—', color: '#9AA0A6' };
+      const origTask = s.tasks.find(x => x.id === o.taskId);
+      const oSubtasks = o.subtasks || [];
       return {
-        title: t.title,
-        priorityColor: priorityColors[t.priority] === '#DADCE0' ? '#34A853' : (priorityColors[t.priority] || '#34A853'),
-        dateLabel: t.dueDate ? new Date(t.dueDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : 'Sem data',
+        id: o.id,
+        title: o.title,
+        priorityColor: origTask ? (priorityColors[origTask.priority] === '#DADCE0' ? '#34A853' : (priorityColors[origTask.priority] || '#34A853')) : '#34A853',
+        dateLabel: o.isUndated ? 'SEM DATA' : new Date(o.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }),
         listName: list.name,
-        onToggle: () => this.toggleTask(t.id),
-        onDelete: () => this.deleteTask(t.id),
+        hasSubtasks: oSubtasks.length > 0, subtaskLabel: oSubtasks.filter(st => st.completed).length + '/' + oSubtasks.length,
+        expanded: s.expandedTaskId === o.id,
+        onExpand: () => this.toggleExpand(o.id),
+        subtasks: oSubtasks.map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleOccurrenceSubtask(o.id, st.id),
+        })),
+        onToggle: () => this.undoCompletedOccurrence(o.id),
+        onDelete: () => this.deleteCompletedOccurrence(o.id),
       };
     });
+    completedTasks.push(...completedOccToday);
+    const completedTasksAll = [];
 
     // ----- Undated tasks (only shown on the Tarefas page) -----
     const undatedTasksRaw = s.tasks.filter(t => !t.dueDate && !t.completed);
@@ -1630,6 +1922,8 @@ class Component extends DCLogic {
           id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
           fill: st.completed ? '#4285F4' : '#FFFFFF',
           hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
           onLinkClick: (e) => e.stopPropagation(),
           onToggle: () => this.toggleSubtask(t.id, st.id),
         })),
@@ -1640,8 +1934,147 @@ class Component extends DCLogic {
       };
     });
 
+    // ----- Tasks page period browser -----
+    const monthNamesShort2 = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const monthNamesFull2 = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let periodStart, periodEnd, periodLabel;
+    if (s.tasksViewMode === 'week') {
+      const base = addDays(weekStartIso(today), s.tasksPeriodOffset * 7);
+      periodStart = base; periodEnd = addDays(base, 6);
+      const startD = new Date(periodStart + 'T00:00:00'), endD = new Date(periodEnd + 'T00:00:00');
+      periodLabel = s.tasksPeriodOffset === 0 ? 'Essa semana' : startD.getDate() + ' ' + monthNamesShort2[startD.getMonth()] + ' – ' + endD.getDate() + ' ' + monthNamesShort2[endD.getMonth()];
+    } else if (s.tasksViewMode === 'month') {
+      const base = new Date(today + 'T00:00:00');
+      base.setDate(1); base.setMonth(base.getMonth() + s.tasksPeriodOffset);
+      const y = base.getFullYear(), m = base.getMonth();
+      periodStart = y + '-' + String(m + 1).padStart(2, '0') + '-01';
+      const daysInM = new Date(y, m + 1, 0).getDate();
+      periodEnd = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(daysInM).padStart(2, '0');
+      periodLabel = monthNamesFull2[m] + ' ' + y;
+    } else {
+      periodStart = addDays(today, s.tasksPeriodOffset);
+      periodEnd = periodStart;
+      const d = new Date(periodStart + 'T00:00:00');
+      periodLabel = s.tasksPeriodOffset === 0 ? 'Hoje' : d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    const periodTasksRaw = s.tasks.filter(t => t.dueDate && t.dueDate >= periodStart && t.dueDate <= periodEnd && !t.completed);
+    const periodDayCards = s.tasksViewMode !== 'day' ? [] : periodTasksRaw.map(t => {
+      const list = listMap[t.listId] || { name: '—', color: '#9AA0A6' };
+      const doneCount = (t.subtasks || []).filter(st => st.completed).length;
+      const total = (t.subtasks || []).length;
+      return {
+        id: t.id, title: t.title, completed: t.completed,
+        priorityColor: priorityColors[t.priority] || '#DADCE0',
+        checkFill: '#FFFFFF', strike: 'none', opacity: '1',
+        listName: list.name, listColor: list.color, listBg: list.color + '1A',
+        hasSubtasks: total > 0, subtaskLabel: doneCount + '/' + total,
+        isRepeating: !!(t.repeat && t.repeat !== 'none'),
+        hasNotes: !!(t.notes && t.notes.trim()), notesPreview: t.notes || '',
+        hasLink: !!(t.link && t.link.trim()), link: t.link || '',
+        onLinkClick: (e) => e.stopPropagation(),
+        expanded: s.expandedTaskId === t.id,
+        subtasks: (t.subtasks || []).map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleSubtask(t.id, st.id),
+        })),
+        onToggle: () => this.toggleTask(t.id),
+        onDelete: () => this.requestDeleteTask(t.id),
+        onExpand: () => this.toggleExpand(t.id),
+        onEdit: () => this.editTask(t),
+      };
+    });
+    const periodGroups = [];
+    if (s.tasksViewMode !== 'day') {
+      let cur = periodStart;
+      while (cur <= periodEnd) {
+        const dayTasks = periodTasksRaw.filter(t => t.dueDate === cur);
+        if (dayTasks.length > 0) {
+          const dLabel = new Date(cur + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' });
+          periodGroups.push({
+            label: cur === today ? 'Hoje · ' + dLabel : dLabel,
+            tasks: dayTasks.map(t => {
+              const list = listMap[t.listId] || { name: '—', color: '#9AA0A6' };
+              return {
+                title: t.title,
+                priorityColor: priorityColors[t.priority] || '#DADCE0',
+                listName: list.name, listColor: list.color, listBg: list.color + '1A',
+                isRepeating: !!(t.repeat && t.repeat !== 'none'),
+                onToggle: () => this.toggleTask(t.id),
+                onEdit: () => this.editTask(t),
+                onDelete: () => this.requestDeleteTask(t.id),
+              };
+            }),
+          });
+        }
+        cur = addDays(cur, 1);
+      }
+    }
+    const hasPeriodItems = periodDayCards.length > 0 || periodGroups.length > 0;
+    const completedAllRaw = s.tasks.filter(t => {
+      if (!t.completed) return false;
+      const cdate = t.completedDate || t.dueDate || t.undatedCompletedDate;
+      return cdate && cdate >= periodStart && cdate <= periodEnd;
+    }).sort((a, b) => ((b.completedDate || b.dueDate || b.undatedCompletedDate) || '').localeCompare((a.completedDate || a.dueDate || a.undatedCompletedDate) || ''));
+    completedAllRaw.forEach(t => {
+      const list = listMap[t.listId] || { name: '—', color: '#9AA0A6' };
+      const cdate = t.completedDate || t.dueDate || t.undatedCompletedDate;
+      const total = (t.subtasks || []).length;
+      const doneCount = (t.subtasks || []).filter(st => st.completed).length;
+      completedTasksAll.push({
+        id: t.id,
+        title: t.title,
+        priorityColor: priorityColors[t.priority] === '#DADCE0' ? '#34A853' : (priorityColors[t.priority] || '#34A853'),
+        dateLabel: t.dueDate ? new Date(t.dueDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : 'SEM DATA',
+        listName: list.name,
+        hasSubtasks: total > 0, subtaskLabel: doneCount + '/' + total,
+        expanded: s.expandedTaskId === t.id,
+        onExpand: () => this.toggleExpand(t.id),
+        subtasks: (t.subtasks || []).map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleSubtask(t.id, st.id),
+        })),
+        onToggle: () => this.toggleTask(t.id),
+        onDelete: () => this.deleteTask(t.id),
+      });
+    });
+    s.completedOccurrences.filter(o => (o.completedDate || o.date) && (o.completedDate || o.date) >= periodStart && (o.completedDate || o.date) <= periodEnd).forEach(o => {
+      const list = listMap[o.listId] || { name: '—', color: '#9AA0A6' };
+      completedTasksAll.push({
+        id: o.id,
+        title: o.title,
+        priorityColor: '#34A853',
+        dateLabel: o.isUndated ? 'SEM DATA' : new Date(o.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }),
+        listName: list.name,
+        hasSubtasks: (o.subtasks || []).length > 0,
+        subtaskLabel: (o.subtasks || []).filter(st => st.completed).length + '/' + (o.subtasks || []).length,
+        expanded: s.expandedTaskId === o.id,
+        onExpand: () => this.toggleExpand(o.id),
+        subtasks: (o.subtasks || []).map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleOccurrenceSubtask(o.id, st.id),
+        })),
+        onToggle: () => this.undoCompletedOccurrence(o.id),
+        onDelete: () => this.deleteCompletedOccurrence(o.id),
+      });
+    });
+
     const dow = new Date(today + 'T00:00:00').getDay();
-    const habitsTodayRaw = s.habits.filter(h => habitScheduledOn(h, today));
+    const habitsTodayRaw = sortByFreq(s.habits.filter(h => habitScheduledOn(h, today)));
     const habitsToday = habitsTodayRaw.map(h => {
       const list = listMap[h.listId] || { name: '—', color: '#9AA0A6' };
       const mode = h.freqMode || 'day';
@@ -1651,7 +2084,7 @@ class Component extends DCLogic {
       let showCount = false, countLabel = '';
       if (mode === 'day') {
         const tpd = h.timesPerDay || 1;
-        showCount = tpd > 1;
+        showCount = true;
         countLabel = count + '/' + tpd + ' hoje';
       } else {
         const sums = periodSums(h, mode);
@@ -1660,36 +2093,85 @@ class Component extends DCLogic {
         countLabel = sum + '/' + (h.freqCount || 1) + (mode === 'week' ? ' esta semana' : (mode === 'year' ? ' este ano' : ' este mês'));
       }
       return {
-        id: h.id, name: h.name, icon: h.icon, listName: list.name,
+        id: h.id, name: h.name, icon: h.icon, listName: list.name, listColor: list.color, listBg: list.color + '1A',
         streak, strike: done ? 'line-through' : 'none',
-        ringColor: done ? '#34A853' : '#DADCE0',
-        fillColor: done ? '#34A853' : '#FFFFFF',
+        ringColor: done ? list.color : '#DADCE0',
+        fillColor: done ? list.color : '#FFFFFF',
         iconColor: done ? '#FFFFFF' : '#5F6368',
+        plusOneColor: list.color,
         showCount, countLabel,
+        pulseAnim: s.pulsingHabitId === h.id ? 'habitPulse 0.5s ease-out' : 'none',
+        cardFlashAnim: s.pulsingHabitId === h.id ? 'cardFlash 0.6s ease-out' : 'none',
+        showPlusOne: s.pulsingHabitId === h.id,
         onToggle: () => this.incrementHabitToday(h.id),
         onResetCount: () => this.resetHabitCountOn(h.id, today),
       };
     });
 
     // ----- Habits view -----
-    const allHabits = s.habits.map(h => {
+    const allHabits = sortByFreq(s.habits).map(h => {
       const list = listMap[h.listId] || { name: '—', color: '#9AA0A6' };
       const mode = h.freqMode || 'day';
       const tpd = h.timesPerDay || 1;
       const streak = computeStreak(h);
       const best = computeBest(h);
       const last14 = [];
-      for (let i = 13; i >= 0; i--) {
-        const iso = addDays(today, -i);
-        const scheduled = habitScheduledOn(h, iso);
-        const done = habitDoneOn(h, iso);
-        last14.push({
-          num: parseInt(iso.slice(8), 10),
-          color: done ? '#34A853' : (scheduled ? '#F1F3F4' : '#FAFAFB'),
-          textColor: done ? '#FFFFFF' : '#9AA0A6',
-          onToggle: () => this.toggleHabitDay(h.id, iso),
-        });
+      const target = h.freqCount || 1;
+      if (mode === 'day') {
+        const dayTarget = tpd;
+        for (let i = 13; i >= 0; i--) {
+          const iso = addDays(today, -i);
+          const scheduled = habitScheduledOn(h, iso);
+          const count = h.history[iso] || 0;
+          const pct = Math.min(count, dayTarget) / dayTarget * 100;
+          last14.push({
+            num: parseInt(iso.slice(8), 10),
+            fillPct: pct,
+            fillColor: list.color,
+            textColor: pct >= 50 ? '#FFFFFF' : (scheduled ? '#5F6368' : '#9AA0A6'),
+            bgColor: scheduled || count > 0 ? '#F1F3F4' : '#FAFAFB',
+            onToggle: () => this.incrementHabitCorrection(h.id, iso, dayTarget, 'day'),
+          });
+        }
+      } else {
+        const sums = periodSums(h, mode);
+        const cellFor = (key, label) => {
+          const count = sums[periodKeyOf(key, mode)] || 0;
+          const pct = Math.min(count, target) / target * 100;
+          return {
+            num: label,
+            fillPct: pct,
+            fillColor: list.color,
+            textColor: pct >= 50 ? '#FFFFFF' : '#5F6368',
+            bgColor: '#F1F3F4',
+            onToggle: () => this.incrementHabitCorrection(h.id, key, target, mode),
+          };
+        };
+        if (mode === 'week') {
+          const curWeek = weekStartIso(today);
+          for (let i = 7; i >= 0; i--) {
+            const key = addDays(curWeek, -7 * i);
+            const d = new Date(key + 'T00:00:00');
+            last14.push(cellFor(key, String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0')));
+          }
+        } else if (mode === 'month') {
+          const curMonth = today.slice(0, 7) + '-01';
+          for (let i = 11; i >= 0; i--) {
+            const key = addMonths(curMonth, -i);
+            last14.push(cellFor(key, MONTH_ABBR[parseInt(key.slice(5, 7), 10) - 1]));
+          }
+        } else {
+          const curYear = parseInt(today.slice(0, 4), 10);
+          for (let i = 4; i >= 0; i--) {
+            const y = curYear - i;
+            last14.push(cellFor(y + '-01-01', String(y)));
+          }
+        }
       }
+      const correctionHint = mode === 'day' ? 'Toque em um dia para corrigir a marcação'
+        : mode === 'week' ? 'Toque em uma semana para corrigir a marcação'
+        : mode === 'month' ? 'Toque em um mês para corrigir a marcação'
+        : 'Toque em um ano para corrigir a marcação';
       let freqLabel;
       if (mode === 'week') freqLabel = (h.freqCount || 1) + 'x por semana';
       else if (mode === 'month') freqLabel = (h.freqCount || 1) + 'x por mês';
@@ -1697,7 +2179,7 @@ class Component extends DCLogic {
       else freqLabel = ((h.freq || []).length === 7 ? 'todo dia' : (h.freq || []).length + ' dias/semana') + (tpd > 1 ? ' · ' + tpd + 'x/dia' : '');
       return {
         id: h.id, name: h.name, icon: h.icon, color: list.color, bgTint: list.color + '1A',
-        listName: list.name, freqLabel, streak, best, last14,
+        listName: list.name, freqLabel, streak, best, last14, correctionHint,
         onDelete: () => this.deleteHabit(h.id),
         onReset: () => this.resetHabit(h.id),
         onEdit: () => this.editHabit(h),
@@ -1735,47 +2217,87 @@ class Component extends DCLogic {
     });
     const selDow = new Date(s.selectedDate + 'T00:00:00').getDay();
     const selectedDayItems = [
-      ...s.tasks.filter(t => t.dueDate === s.selectedDate).map(t => ({
+      ...s.tasks.filter(t => t.dueDate === s.selectedDate).map(t => {
+        const total = (t.subtasks || []).length;
+        const doneCount = (t.subtasks || []).filter(st => st.completed).length;
+        return {
         icon: 'checklist',
         color: t.completed ? '#34A853' : (priorityColors[t.priority] || '#9AA0A6'),
-        label: t.title, kind: 'Tarefa', isTask: true,
+        label: t.title, isTask: true, isCheckboxType: true,
         strike: t.completed ? 'line-through' : 'none',
         done: t.completed,
+        showDoneDate: t.completed,
+        doneDateLabel: t.completed ? new Date((t.completedDate || s.selectedDate) + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
         ringColor: t.completed ? '#34A853' : (priorityColors[t.priority] || '#DADCE0'),
         fill: t.completed ? '#34A853' : '#FFFFFF',
+        hasSubtasks: total > 0, subtaskLabel: doneCount + '/' + total,
+        expanded: s.expandedTaskId === t.id,
+        onExpand: () => this.toggleExpand(t.id),
+        subtasks: (t.subtasks || []).map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleSubtask(t.id, st.id),
+        })),
         onToggle: () => this.toggleTask(t.id),
         onEdit: () => this.editTask(t),
         onDelete: () => this.requestDeleteTask(t.id),
-      })),
+      };
+      }),
       ...s.completedOccurrences.filter(o => o.date === s.selectedDate).map(o => ({
-        icon: 'checklist', color: '#34A853', label: o.title, kind: 'Concluída', isTask: false,
+        icon: 'checklist', color: '#34A853', label: o.title, isTask: false, isCheckboxType: true,
+        isOccurrence: true,
         strike: 'line-through', done: true, ringColor: '#34A853', fill: '#34A853',
-        onToggle: () => {},
+        hasSubtasks: (o.subtasks || []).length > 0,
+        subtaskLabel: (o.subtasks || []).filter(st => st.completed).length + '/' + (o.subtasks || []).length,
+        expanded: s.expandedTaskId === o.id,
+        onExpand: () => this.toggleExpand(o.id),
+        subtasks: (o.subtasks || []).map(st => ({
+          id: st.id, title: st.title, strike: st.completed ? 'line-through' : 'none',
+          fill: st.completed ? '#4285F4' : '#FFFFFF',
+          hasLink: !!(st.link && st.link.trim()), link: st.link || '',
+          showDoneDate: !!(st.completed && st.completedDate),
+          doneDateLabel: st.completedDate ? new Date(st.completedDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }) : '',
+          onLinkClick: (e) => e.stopPropagation(),
+          onToggle: () => this.toggleOccurrenceSubtask(o.id, st.id),
+        })),
+        showDoneDate: true,
+        doneDateLabel: new Date((o.completedDate || o.date) + 'T00:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }),
+        onToggle: () => this.undoCompletedOccurrence(o.id),
+        onDelete: () => this.deleteCompletedOccurrence(o.id),
       })),
-      ...s.habits.filter(h => habitScheduledOn(h, s.selectedDate)).map(h => {
+      ...sortByFreq(s.habits.filter(h => habitScheduledOn(h, s.selectedDate))).map(h => {
         const done = habitDoneOn(h, s.selectedDate);
         const mode = h.freqMode || 'day';
-        let showCount = true, dayCountLabel = '', hasGoalLabel = false, goalCountLabel = '';
+        let showCount = true, dayCountLabel = '', hasDayOnlyLabel = false, dayOnlyLabel = '';
         const dayCount = h.history[s.selectedDate] || 0;
         if (mode === 'day') {
           const tpd = h.timesPerDay || 1;
-          dayCountLabel = dayCount + '/' + tpd;
+          dayCountLabel = dayCount + '/' + tpd + ' no dia';
         } else {
           const target = h.freqCount || 1;
           const sums = periodSums(h, mode);
           const periodSum = sums[periodKeyOf(s.selectedDate, mode)] || 0;
-          dayCountLabel = dayCount + 'x no dia';
-          hasGoalLabel = true;
-          goalCountLabel = periodSum + '/' + target;
+          const freqWord = { week: 'na semana', month: 'no mês', year: 'no ano' }[mode] || '';
+          dayCountLabel = periodSum + '/' + target + ' ' + freqWord;
+          hasDayOnlyLabel = true;
+          dayOnlyLabel = dayCount + ' no dia';
         }
         return {
-          icon: h.icon, color: (listMap[h.listId] || {}).color || '#9AA0A6', label: h.name, kind: 'Hábito', isTask: false, isHabit: true,
-          freqBadge: { day: 'D', week: 'S', month: 'M', year: 'A' }[mode] || 'D',
+          icon: h.icon, color: (listMap[h.listId] || {}).color || '#9AA0A6', label: h.name, isTask: false, isHabit: true,
           strike: done ? 'line-through' : 'none',
-          done, showCount, dayCountLabel, hasGoalLabel, goalCountLabel,
+          done, showCount, dayCountLabel, hasDayOnlyLabel, dayOnlyLabel,
           onResetCount: () => this.resetHabitCountOn(h.id, s.selectedDate),
-          ringColor: done ? '#34A853' : '#DADCE0',
-          fill: done ? '#34A853' : '#FFFFFF',
+          ringColor: done ? ((listMap[h.listId] || {}).color || '#9AA0A6') : '#DADCE0',
+          fill: done ? ((listMap[h.listId] || {}).color || '#9AA0A6') : '#FFFFFF',
+          iconColor: done ? '#FFFFFF' : '#5F6368',
+          plusOneColor: (listMap[h.listId] || {}).color || '#34A853',
+          pulseAnim: s.pulsingHabitId === h.id ? 'habitPulse 0.5s ease-out' : 'none',
+          cardFlashAnim: s.pulsingHabitId === h.id ? 'cardFlash 0.6s ease-out' : 'none',
+          showPlusOne: s.pulsingHabitId === h.id,
           onToggle: () => this.incrementHabitOn(h.id, s.selectedDate),
         };
       }),
@@ -1886,7 +2408,7 @@ class Component extends DCLogic {
       return { pct: ratios.reduce((a, b) => a + b, 0) / ratios.length, done: achieved, total: keyList.length };
     }
 
-    const habitDetailStats = s.habits.map(h => {
+    const habitDetailStats = sortByFreq(s.habits).map(h => {
       const list = listMap[h.listId] || { name: '—', color: '#9AA0A6' };
       const mode = h.freqMode || 'day';
       const tpd = h.timesPerDay || 1;
@@ -1921,29 +2443,10 @@ class Component extends DCLogic {
     const listsWithCounts = s.lists.map(l => {
       const listTasks = s.tasks.filter(t => t.listId === l.id && t.dueDate);
       const listHabits = s.habits.filter(h => h.listId === l.id);
-      const items = [
-        ...listTasks.map(t => ({
-          icon: 'checklist',
-          color: t.completed ? '#34A853' : '#9AA0A6',
-          label: t.title, kind: 'Tarefa', isTask: true,
-          isRepeating: !!(t.repeat && t.repeat !== 'none'),
-          strike: t.completed ? 'line-through' : 'none',
-          done: t.completed,
-          ringColor: t.completed ? '#34A853' : (priorityColors[t.priority] || '#DADCE0'),
-          fill: t.completed ? '#34A853' : '#FFFFFF',
-          onToggle: () => this.toggleTask(t.id),
-          onEdit: () => this.editTask(t),
-          onDelete: () => this.requestDeleteTask(t.id),
-        })),
-        ...listHabits.map(h => ({ icon: h.icon, color: l.color, label: h.name, kind: 'Hábito', isTask: false, strike: 'none' })),
-      ];
       return {
         id: l.id, name: l.name, color: l.color,
         countLabel: listTasks.length + ' tarefas · ' + listHabits.length + ' hábitos',
-        expanded: s.expandedListId === l.id,
-        chevron: s.expandedListId === l.id ? 'expand_less' : 'expand_more',
-        items, itemsEmpty: items.length === 0,
-        onToggle: () => this.toggleListExpand(l.id),
+        onEdit: (e) => { e.stopPropagation(); this.editList(l); },
         onDelete: (e) => { e.stopPropagation(); this.deleteList(l.id); },
       };
     });
@@ -1954,8 +2457,6 @@ class Component extends DCLogic {
       { key: 'tasks', icon: 'checklist', label: 'Tarefas' },
       { key: 'habits', icon: 'self_improvement', label: 'Hábitos' },
       { key: 'calendar', icon: 'calendar_month', label: 'Calendário' },
-      { key: 'stats', icon: 'bar_chart', label: 'Estatísticas' },
-      { key: 'lists', icon: 'list', label: 'Listas' },
     ];
     const navItems = navDefs.map(n => ({
       icon: n.icon, label: n.label,
@@ -2041,7 +2542,7 @@ class Component extends DCLogic {
       viewTitle, viewSubtitle,
       isToday: s.view === 'today', isHabits: s.view === 'habits', isCalendar: s.view === 'calendar',
       isStats: s.view === 'stats', isLists: s.view === 'lists', isTasksPage: s.view === 'tasks',
-      hasNoneToday: tasksToday.length === 0 && habitsToday.length === 0 && overdueTasks.length === 0,
+      hasNoneToday: tasksToday.length === 0 && habitsToday.length === 0 && overdueTasks.length === 0 && completedTasks.length === 0,
       hasHabitsToday: habitsToday.length > 0, hasTasksToday: tasksToday.length > 0,
       hasOverdue: overdueTasks.length > 0, overdueTasks,
       tasksToday, habitsToday,
@@ -2049,6 +2550,31 @@ class Component extends DCLogic {
       hasCompleted: completedTasks.length > 0, completedCount: completedTasks.length,
       completedExpanded: s.completedExpanded,
       completedChevron: s.completedExpanded ? 'expand_less' : 'expand_more',
+      completedVisible: completedTasks.length > 0 && s.completedExpanded,
+      completedAllVisible: completedTasksAll.length > 0 && s.completedExpanded,
+      overdueExpanded: !s.collapsedSections.overdue, overdueChevron: s.collapsedSections.overdue ? 'expand_more' : 'expand_less',
+      toggleOverdue: () => this.toggleSection('overdue'),
+      overdueVisible: overdueTasks.length > 0 && !s.collapsedSections.overdue,
+      habitsExpanded: !s.collapsedSections.habits, habitsChevron: s.collapsedSections.habits ? 'expand_more' : 'expand_less',
+      toggleHabits: () => this.toggleSection('habits'),
+      habitsVisible: habitsToday.length > 0 && !s.collapsedSections.habits,
+      todayTasksExpanded: !s.collapsedSections.todayTasks, todayTasksChevron: s.collapsedSections.todayTasks ? 'expand_more' : 'expand_less',
+      toggleTodayTasks: () => this.toggleSection('todayTasks'),
+      todayTasksVisible: tasksToday.length > 0 && !s.collapsedSections.todayTasks,
+      upcomingExpanded: !s.collapsedSections.upcoming, upcomingChevron: s.collapsedSections.upcoming ? 'expand_more' : 'expand_less',
+      toggleUpcoming: () => this.toggleSection('upcoming'),
+      upcomingVisible: upcomingGroups.length > 0 && !s.collapsedSections.upcoming,
+      undatedExpanded: !s.collapsedSections.undated, undatedChevron: s.collapsedSections.undated ? 'expand_more' : 'expand_less',
+      toggleUndated: () => this.toggleSection('undated'),
+      undatedVisible: undatedTasks.length > 0 && !s.collapsedSections.undated,
+      isPeriodDay: s.tasksViewMode === 'day', isPeriodGroup: s.tasksViewMode !== 'day', hasPeriodItems, periodDayCards, periodGroups, periodLabel,
+      prevTasksPeriod: () => this.prevTasksPeriod(), nextTasksPeriod: () => this.nextTasksPeriod(),
+      setDayMode: () => this.setTasksViewMode('day'),
+      setWeekMode: () => this.setTasksViewMode('week'),
+      setMonthMode: () => this.setTasksViewMode('month'),
+      dayModeBg: s.tasksViewMode === 'day' ? '#4285F4' : 'transparent', dayModeColor: s.tasksViewMode === 'day' ? '#FFFFFF' : '#5F6368',
+      weekModeBg: s.tasksViewMode === 'week' ? '#4285F4' : 'transparent', weekModeColor: s.tasksViewMode === 'week' ? '#FFFFFF' : '#5F6368',
+      monthModeBg: s.tasksViewMode === 'month' ? '#4285F4' : 'transparent', monthModeColor: s.tasksViewMode === 'month' ? '#FFFFFF' : '#5F6368',
       completedTasks,
       toggleCompletedSection: () => this.setState(st => ({ completedExpanded: !st.completedExpanded })),
       hasNoHabits: allHabits.length === 0, allHabits,
@@ -2061,12 +2587,14 @@ class Component extends DCLogic {
       prevStatsPeriod: () => this.prevStatsPeriod(), nextStatsPeriod: () => this.nextStatsPeriod(),
       nextStatsDisabled: offset === 0, nextStatsOpacity: offset === 0 ? '0.35' : '1',
       listsWithCounts, openNewList: () => this.openNewList(),
+      listModalTitle: s.editingListId ? 'Editar lista' : 'Nova lista',
+      listModalAction: s.editingListId ? 'Salvar' : 'Criar',
       hasUndated: undatedTasks.length > 0, undatedTasks,
       completedTasksAll, hasCompletedAll: completedTasksAll.length > 0,
       hasNoneTasksPage: overdueTasks.length === 0 && undatedTasks.length === 0 && tasksToday.length === 0 && upcomingGroups.length === 0,
-      showFab: s.view === 'today' || s.view === 'habits' || s.view === 'lists' || s.view === 'tasks',
+      showFab: s.view === 'today' || s.view === 'habits' || s.view === 'tasks' || s.view === 'calendar',
       openAdd: () => this.openAdd(),
-      navItems,
+      navItems, navItemsLeft: navItems.slice(0, 2), navItemsRight: navItems.slice(2, 4),
       modalOpen: s.modalOpen, closeModal: () => this.closeModal(), stopProp: (e) => this.stopProp(e),
       modalHeading, canSwitchType: !s.editingId,
       typeTaskBorder: s.draftType === 'task' ? '#4285F4' : '#E8EAED',
@@ -2107,6 +2635,10 @@ class Component extends DCLogic {
       newListName: s.newListName, onNewListNameChange: (e) => this.setState({ newListName: e.target.value }),
       colorOptions, moreColorOptions, saveNewList: () => this.saveNewList(),
       settingsOpen: s.settingsOpen, openSettings: () => this.openSettings(), closeSettings: () => this.closeSettings(),
+      menuOpen: s.menuOpen, toggleMenu: () => this.toggleMenu(), closeMenu: () => this.closeMenu(),
+      menuGoStats: () => { this.goView('stats'); this.closeMenu(); },
+      menuGoLists: () => { this.goView('lists'); this.closeMenu(); },
+      menuGoSync: () => { this.setState({ menuOpen: false, settingsOpen: true, driveClientIdDraft: this.state.driveClientId, syncMessage: '' }); },
       driveConnected: s.driveConnected, driveNotConnected: !s.driveConnected,
       driveClientIdDraft: s.driveClientIdDraft, onDriveClientIdChange: (e) => this.setState({ driveClientIdDraft: e.target.value }),
       connectDrive: () => this.connectDrive(), disconnectDrive: () => this.disconnectDrive(),
