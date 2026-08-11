@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="icon" type="image/png" href="icon.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
@@ -56,6 +55,8 @@
     }
   </script>
   <script src="./drive-sync.js"></script>
+  <script src="./firebase-config.js"></script>
+  <script src="./firebase-sync.js"></script>
 </helmet>
 
 <div class="mentor-shell" style="margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:#F8F9FA;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,0.06);">
@@ -990,37 +991,68 @@
   <sc-if value="{{ settingsOpen }}">
     <div style="position:absolute;inset:0;background:rgba(32,33,36,0.4);display:flex;align-items:flex-end;z-index:50;" onClick="{{ closeSettings }}">
       <div style="background:#FFFFFF;width:100%;max-height:85%;border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom)) 20px;overflow-y:auto;" onClick="{{ stopProp }}">
-        <div style="font-size:17px;font-weight:700;color:#202124;margin-bottom:4px;">Sincronização com Google Drive</div>
-        <div style="font-size:13px;color:#5F6368;margin-bottom:16px;line-height:1.5;">Seus dados ficam em um arquivo (mentor-data.json) na sua própria conta do Google Drive — só você tem acesso. Veja o SETUP.txt para criar seu Client ID (uma vez só).</div>
+        <div style="font-size:17px;font-weight:700;color:#202124;margin-bottom:4px;">Conta e sincronização</div>
+        <div style="font-size:13px;color:#5F6368;margin-bottom:16px;line-height:1.5;">Entre com sua Conta Google para usar o Mentor no computador, no celular e no tablet com os mesmos dados, sincronizados automaticamente. Funciona offline: as alterações sobem sozinhas quando a internet volta.</div>
 
+        <sc-if value="{{ fbSignedIn }}">
+          <div style="display:flex;align-items:center;gap:12px;background:#E6F4EA;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+            <span class="msym" style="color:#188038;font-size:22px;">account_circle</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;color:#188038;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ fbUserName }}</div>
+              <div style="font-size:11.5px;color:#5F6368;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ fbUserEmail }}</div>
+            </div>
+            <button onClick="{{ fbSignOut }}" style="background:none;border:none;color:#188038;font-size:12.5px;font-weight:700;cursor:pointer;">Sair</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:#F8F9FA;border-radius:12px;padding:11px 14px;margin-bottom:14px;">
+            <span class="msym" style="color:{{ fbStatusColor }};font-size:19px;">{{ fbStatusIcon }}</span>
+            <span style="flex:1;font-size:12.5px;color:{{ fbStatusColor }};">{{ fbStatusMessage }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ fbSignedOut }}">
+          <button onClick="{{ fbSignIn }}" style="width:100%;padding:13px;border-radius:12px;border:none;background:#4285F4;color:#FFFFFF;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <span class="msym" style="font-size:20px;">login</span>
+            <span>Entrar com Google</span>
+          </button>
+          <div style="font-size:12px;color:#9AA0A6;line-height:1.5;margin-bottom:14px;">Sem entrar, o Mentor continua funcionando normalmente — mas os dados ficam só neste aparelho.</div>
+        </sc-if>
+
+        <sc-if value="{{ fbNotConfigured }}">
+          <div style="display:flex;gap:10px;background:#FEF7E0;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+            <span class="msym" style="color:#B06000;font-size:19px;">info</span>
+            <span style="flex:1;font-size:12px;color:#B06000;line-height:1.5;">Sincronização ainda não configurada. Preencha o arquivo firebase-config.js com os dados do seu projeto Firebase (passo a passo no SETUP.txt).</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ fbMigrateAsk }}">
+          <div style="background:#E8F0FE;border-radius:12px;padding:14px;margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:700;color:#1967D2;margin-bottom:4px;">Já existem dados na sua conta</div>
+            <div style="font-size:12px;color:#3C4043;line-height:1.5;margin-bottom:12px;">Este aparelho também tem dados salvos localmente. Qual versão você quer manter? Nada é apagado antes da sua escolha.</div>
+            <div style="display:flex;gap:8px;">
+              <button onClick="{{ fbKeepCloud }}" style="flex:1;padding:11px;border-radius:10px;border:none;background:#4285F4;color:#FFFFFF;font-size:12.5px;font-weight:500;cursor:pointer;">Usar os da nuvem</button>
+              <button onClick="{{ fbKeepLocal }}" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #4285F4;background:#FFFFFF;color:#1967D2;font-size:12.5px;font-weight:500;cursor:pointer;">Enviar os deste aparelho</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasSyncMessage }}">
+          <div style="font-size:12px;color:{{ syncMessageColor }};margin-top:4px;margin-bottom:8px;text-align:center;">{{ syncMessage }}</div>
+        </sc-if>
+
+        <div style="height:1px;background:#E8EAED;margin:20px 0;"></div>
+        <div style="font-size:13px;font-weight:700;color:#202124;margin-bottom:6px;">Importar do Google Drive (dados antigos)</div>
+        <div style="font-size:12px;color:#5F6368;margin-bottom:12px;line-height:1.5;">Se você usou a sincronização antiga por Drive, traga aquele arquivo para cá uma vez. Os dados buscados passam a ser sincronizados pela sua conta.</div>
         <sc-if value="{{ driveConnected }}">
-          <div style="display:flex;align-items:center;gap:10px;background:#E6F4EA;border-radius:12px;padding:12px 14px;margin-bottom:16px;">
-            <span class="msym" style="color:#188038;font-size:20px;">cloud_done</span>
-            <span style="flex:1;font-size:13px;color:#188038;font-weight:500;">Conectado ao Google Drive</span>
+          <div style="display:flex;align-items:center;gap:10px;background:#E6F4EA;border-radius:12px;padding:11px 14px;margin-bottom:10px;">
+            <span class="msym" style="color:#188038;font-size:19px;">cloud_done</span>
+            <span style="flex:1;font-size:12.5px;color:#188038;font-weight:500;">Conectado ao Drive</span>
             <button onClick="{{ disconnectDrive }}" style="background:none;border:none;color:#188038;font-size:12.5px;font-weight:700;cursor:pointer;">Sair</button>
           </div>
+          <button onClick="{{ pullFromDrive }}" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #4285F4;background:#E8F0FE;color:#1967D2;font-size:13px;font-weight:500;cursor:pointer;">Buscar dados do Drive</button>
         </sc-if>
         <sc-if value="{{ driveNotConnected }}">
-          <input value="{{ driveClientIdDraft }}" onChange="{{ onDriveClientIdChange }}" placeholder="OAuth Client ID (.apps.googleusercontent.com)" style="width:100%;border:1.5px solid #E8EAED;border-radius:10px;padding:10px 12px;font-size:13px;outline:none;margin-bottom:12px;">
-          <button onClick="{{ connectDrive }}" style="width:100%;padding:12px;border-radius:12px;border:none;background:#4285F4;color:#FFFFFF;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:16px;">Conectar ao Google Drive</button>
-        </sc-if>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;background:#F8F9FA;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-          <div>
-            <div style="font-size:13.5px;font-weight:500;color:#202124;">Sincronizar automaticamente</div>
-            <div style="font-size:11.5px;color:#9AA0A6;margin-top:2px;">Toda ação salva também no Drive</div>
-          </div>
-          <button onClick="{{ toggleDriveSync }}" style="width:46px;height:26px;border-radius:13px;border:none;background:{{ driveSyncToggleBg }};position:relative;cursor:pointer;flex-shrink:0;padding:0;">
-            <div style="width:20px;height:20px;border-radius:10px;background:#FFFFFF;position:absolute;top:3px;left:{{ driveSyncToggleLeft }};box-shadow:0 1px 2px rgba(0,0,0,0.2);transition:left 0.15s;"></div>
-          </button>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button onClick="{{ pushToDrive }}" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #34A853;background:#E6F4EA;color:#188038;font-size:13px;font-weight:500;cursor:pointer;">Enviar para o Drive</button>
-          <button onClick="{{ pullFromDrive }}" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #4285F4;background:#E8F0FE;color:#1967D2;font-size:13px;font-weight:500;cursor:pointer;">Buscar do Drive</button>
-        </div>
-        <sc-if value="{{ hasSyncMessage }}">
-          <div style="font-size:12px;color:{{ syncMessageColor }};margin-top:8px;text-align:center;">{{ syncMessage }}</div>
+          <input value="{{ driveClientIdDraft }}" onChange="{{ onDriveClientIdChange }}" placeholder="OAuth Client ID (.apps.googleusercontent.com)" style="width:100%;border:1.5px solid #E8EAED;border-radius:10px;padding:10px 12px;font-size:13px;outline:none;margin-bottom:10px;">
+          <button onClick="{{ connectDrive }}" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #DADCE0;background:#FFFFFF;color:#3C4043;font-size:13px;font-weight:500;cursor:pointer;">Conectar ao Google Drive</button>
         </sc-if>
 
         <div style="height:1px;background:#E8EAED;margin:20px 0;"></div>
@@ -1181,6 +1213,11 @@ class Component extends DCLogic {
     syncing: false,
     syncMessage: '',
     syncMessageColor: '#5F6368',
+    fbUser: null,
+    fbConfigured: false,
+    fbStatusState: 'idle',
+    fbStatusMessage: '',
+    fbMigrateAsk: false,
     toastMsg: '',
     toastAction: null,
   };
@@ -1214,10 +1251,110 @@ class Component extends DCLogic {
         });
       }
     } catch (e) {}
+    this.initSync();
   }
 
   componentWillUnmount() {
     if (this._onPopState) window.removeEventListener('popstate', this._onPopState);
+    if (this._unsubDoc) this._unsubDoc();
+    clearTimeout(this._saveT);
+  }
+
+  // ---- Camada de sincronização (Firebase) ----------------------------------
+  // A UI nunca fala com o Firestore direto: tudo passa por window.MentorSync.
+  initSync() {
+    const S = window.MentorSync;
+    if (!S) return;
+    this.setState({ fbConfigured: S.isConfigured() });
+    if (!S.isConfigured()) return;
+
+    S.onStatus(({ state, message }) => this.setState({ fbStatusState: state, fbStatusMessage: message }));
+    S.onAuth(u => {
+      this.setState({ fbUser: u, fbMigrateAsk: false });
+      if (this._unsubDoc) { this._unsubDoc(); this._unsubDoc = null; }
+      this._primed = false;
+      if (u) this._unsubDoc = S.subscribe((data, meta) => this.onRemoteData(data, meta));
+    });
+
+    S.init().catch(e => {
+      if (e && e.message === 'unconfigured') return;
+      this.setState({ syncMessage: 'Não foi possível iniciar a sincronização. O app continua funcionando neste aparelho.', syncMessageColor: '#D93025' });
+    });
+  }
+
+  localPayload() {
+    return {
+      tasks: this.state.tasks, habits: this.state.habits,
+      lists: this.state.lists, completedOccurrences: this.state.completedOccurrences,
+    };
+  }
+
+  hasLocalData() {
+    return this.state.tasks.length > 0 || this.state.habits.length > 0 || this.state.completedOccurrences.length > 0;
+  }
+
+  onRemoteData(data, meta) {
+    const remoteHasData = !!data && (data.tasks.length || data.habits.length || data.completedOccurrences.length || data.lists.length);
+
+    // Primeiro snapshot depois do login: decide migração antes de tocar nos dados.
+    if (!this._primed) {
+      this._primed = true;
+      if (!remoteHasData) { this.pushToCloud(); return; }
+      if (this.hasLocalData() && JSON.stringify(this.localPayload()) !== JSON.stringify({ tasks: data.tasks, habits: data.habits, lists: data.lists, completedOccurrences: data.completedOccurrences })) {
+        this._pendingRemote = data;
+        this.setState({ fbMigrateAsk: true, settingsOpen: true });
+        return;
+      }
+      this.applyRemote(data);
+      return;
+    }
+
+    if (!data) return;
+    if (meta && meta.pending) return; // eco da nossa própria escrita
+    this.applyRemote(data);
+  }
+
+  applyRemote(data) {
+    if (!data) return;
+    if (JSON.stringify(this.localPayload()) === JSON.stringify({ tasks: data.tasks, habits: data.habits, lists: data.lists, completedOccurrences: data.completedOccurrences })) return;
+    this.setState({
+      tasks: data.tasks || [], habits: data.habits || [],
+      lists: (data.lists && data.lists.length) ? data.lists : LISTS_DEFAULT,
+      completedOccurrences: data.completedOccurrences || [],
+    }, () => this.persistLocal());
+  }
+
+  pushToCloud() {
+    const S = window.MentorSync;
+    if (!S || !this.state.fbUser) return;
+    clearTimeout(this._saveT);
+    this._saveT = setTimeout(() => { S.save(this.localPayload()); }, 250);
+  }
+
+  keepCloudData() {
+    const d = this._pendingRemote;
+    this._pendingRemote = null;
+    this.setState({ fbMigrateAsk: false }, () => this.applyRemote(d));
+  }
+
+  keepLocalData() {
+    this._pendingRemote = null;
+    this.setState({ fbMigrateAsk: false }, () => this.pushToCloud());
+  }
+
+  signInCloud() {
+    const S = window.MentorSync;
+    if (!S) return;
+    this.setState({ syncMessage: '', syncMessageColor: '#5F6368' });
+    S.signIn().catch(e => this.setState({ syncMessage: e.message, syncMessageColor: '#D93025' }));
+  }
+
+  signOutCloud() {
+    const S = window.MentorSync;
+    if (!S) return;
+    S.signOut()
+      .then(() => this.setState({ fbStatusState: 'idle', fbStatusMessage: '', syncMessage: 'Você saiu. Os dados continuam neste aparelho.', syncMessageColor: '#5F6368' }))
+      .catch(e => this.setState({ syncMessage: e.message, syncMessageColor: '#D93025' }));
   }
 
   pushOverlayHistory() {
@@ -1227,14 +1364,20 @@ class Component extends DCLogic {
     try { if (history.state && history.state.mentorOverlay) history.back(); } catch (e) {}
   }
 
-  persist() {
+  // Cache local (desempenho + primeira pintura offline). A fonte de verdade
+  // sincronizada é o Firestore; este cache nunca sobrescreve a nuvem sozinho.
+  persistLocal() {
     try {
       localStorage.setItem('ticktick_clone_data_v1', JSON.stringify({
         tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists,
         completedOccurrences: this.state.completedOccurrences,
       }));
     } catch (e) {}
-    if (this.state.driveSyncEnabled && this.state.driveConnected) this.syncToDriveSilently();
+  }
+
+  persist() {
+    this.persistLocal();
+    this.pushToCloud();
   }
 
   async syncToDriveSilently() {
@@ -1734,12 +1877,8 @@ class Component extends DCLogic {
         tasks: data.tasks || [], habits: data.habits || [],
         lists: (data.lists && data.lists.length) ? data.lists : this.state.lists,
         completedOccurrences: data.completedOccurrences || [],
-        syncing: false, syncMessage: 'Dados atualizados do Drive.', syncMessageColor: '#188038',
-      }, () => {
-        try {
-          localStorage.setItem('ticktick_clone_data_v1', JSON.stringify({ tasks: this.state.tasks, habits: this.state.habits, lists: this.state.lists, completedOccurrences: this.state.completedOccurrences }));
-        } catch (e) {}
-      });
+        syncing: false, syncMessage: 'Dados do Drive importados' + (this.state.fbUser ? ' e enviados para a sua conta.' : '.'), syncMessageColor: '#188038',
+      }, () => this.persist());
     } catch (e) {
       this.setState({ syncing: false, syncMessage: 'Erro ao buscar: ' + e.message, syncMessageColor: '#D93025' });
     }
@@ -2642,10 +2781,16 @@ class Component extends DCLogic {
       driveConnected: s.driveConnected, driveNotConnected: !s.driveConnected,
       driveClientIdDraft: s.driveClientIdDraft, onDriveClientIdChange: (e) => this.setState({ driveClientIdDraft: e.target.value }),
       connectDrive: () => this.connectDrive(), disconnectDrive: () => this.disconnectDrive(),
-      toggleDriveSync: () => this.toggleDriveSync(),
-      driveSyncToggleBg: s.driveSyncEnabled ? '#34A853' : '#DADCE0',
-      driveSyncToggleLeft: s.driveSyncEnabled ? '23px' : '3px',
       pushToDrive: () => this.pushToDrive(), pullFromDrive: () => this.pullFromDrive(),
+      fbSignedIn: !!s.fbUser, fbSignedOut: s.fbConfigured && !s.fbUser, fbNotConfigured: !s.fbConfigured,
+      fbUserName: s.fbUser ? (s.fbUser.name || 'Conta Google') : '',
+      fbUserEmail: s.fbUser ? s.fbUser.email : '',
+      fbSignIn: () => this.signInCloud(), fbSignOut: () => this.signOutCloud(),
+      fbStatusMessage: s.fbStatusMessage || 'Sincronizado',
+      fbStatusColor: s.fbStatusState === 'error' ? '#D93025' : (s.fbStatusState === 'offline' || s.fbStatusState === 'warn') ? '#B06000' : (s.fbStatusState === 'ok' ? '#188038' : '#5F6368'),
+      fbStatusIcon: s.fbStatusState === 'error' ? 'sync_problem' : (s.fbStatusState === 'offline' ? 'cloud_off' : (s.fbStatusState === 'ok' ? 'cloud_done' : 'sync')),
+      fbMigrateAsk: s.fbMigrateAsk,
+      fbKeepCloud: () => this.keepCloudData(), fbKeepLocal: () => this.keepLocalData(),
       syncing: s.syncing, hasSyncMessage: !!s.syncMessage, syncMessage: s.syncMessage, syncMessageColor: s.syncMessageColor,
       toastMsg: s.toastMsg, hasToastAction: !!s.toastAction, toastAction: s.toastAction,
       confirmDeleteOpen: !!s.confirmDeleteTaskId,

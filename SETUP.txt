@@ -1,0 +1,140 @@
+MENTOR — CONFIGURAÇÃO (Firebase + PWA)
+======================================
+
+O Mentor é UMA única aplicação web responsiva (desktop, tablet, celular e PWA
+instalado). A partir desta versão os dados ficam no Cloud Firestore, na sua
+conta Google, e são sincronizados em tempo real entre todos os aparelhos.
+
+--------------------------------------------------------------------------
+1. CRIAR O PROJETO FIREBASE (uma vez só)
+--------------------------------------------------------------------------
+1. Acesse https://console.firebase.google.com e clique em "Adicionar projeto".
+   Nome sugerido: mentor. Google Analytics pode ser desativado.
+2. Dentro do projeto, clique no ícone "</>" (Web) para registrar um app.
+   Apelido: Mentor. NÃO marque "Firebase Hosting" se você já publica em
+   GitHub Pages / Vercel — a hospedagem atual continua a mesma.
+3. Copie o objeto firebaseConfig mostrado na tela.
+
+--------------------------------------------------------------------------
+2. PREENCHER firebase-config.js
+--------------------------------------------------------------------------
+Abra o arquivo firebase-config.js do projeto e cole os valores:
+
+  window.MENTOR_FIREBASE_CONFIG = {
+    apiKey: "...",
+    authDomain: "seu-projeto.firebaseapp.com",
+    projectId: "seu-projeto",
+    storageBucket: "seu-projeto.appspot.com",
+    messagingSenderId: "...",
+    appId: "...",
+  };
+
+Esses valores são PÚBLICOS por natureza (identificam o projeto no navegador).
+Nunca coloque aqui uma Service Account ou chave de administrador — a proteção
+real dos dados são as Security Rules do passo 4.
+
+--------------------------------------------------------------------------
+3. ATIVAR AUTHENTICATION (Google Sign-In)
+--------------------------------------------------------------------------
+1. Console → Build → Authentication → "Get started".
+2. Aba "Sign-in method" → Google → Ativar → escolha o e-mail de suporte → Salvar.
+3. Aba "Settings" → "Authorized domains" → adicione os domínios onde o Mentor
+   roda. Ex.: seu-usuario.github.io, localhost (já vem), seu domínio próprio.
+   Sem isso o login falha com "domínio não autorizado".
+
+--------------------------------------------------------------------------
+4. ATIVAR O CLOUD FIRESTORE E AS REGRAS
+--------------------------------------------------------------------------
+1. Console → Build → Firestore Database → "Criar banco de dados".
+2. Escolha o modo de PRODUÇÃO (regras fechadas) e a região mais próxima
+   (ex.: southamerica-east1).
+3. Aba "Regras" → apague tudo → cole o conteúdo do arquivo firestore.rules
+   deste projeto → Publicar.
+
+   As regras garantem que cada usuário só lê e escreve em users/{seu-uid}.
+   Qualquer outro caminho é negado.
+
+--------------------------------------------------------------------------
+5. RODAR LOCALMENTE
+--------------------------------------------------------------------------
+O Firebase Auth e o Service Worker exigem http(s) — não funciona abrindo o
+arquivo com file://. Na pasta do projeto:
+
+   python -m http.server 8080
+   (ou:  npx serve .)
+
+Depois abra http://localhost:8080/Mentor.dc.html
+
+--------------------------------------------------------------------------
+6. PUBLICAR
+--------------------------------------------------------------------------
+A hospedagem não muda. Se você usa GitHub Pages: faça commit dos arquivos e
+push para a branch publicada (Settings → Pages). Depois de publicar, confirme
+que o domínio está na lista de "Authorized domains" do passo 3.
+
+--------------------------------------------------------------------------
+7. USAR NO APP
+--------------------------------------------------------------------------
+Abra o Mentor → menu (☰) → Sincronização → "Entrar com Google".
+A sessão fica salva: nos próximos acessos você já entra logado.
+
+Se ao entrar já existirem dados na nuvem E dados neste aparelho, o Mentor
+pergunta qual versão manter. Nada é sobrescrito sem a sua confirmação.
+
+Dados da sincronização antiga por Google Drive: na mesma tela, seção
+"Importar do Google Drive (dados antigos)" → conectar → "Buscar dados do
+Drive". O que vier é enviado para a sua conta Firebase.
+
+--------------------------------------------------------------------------
+8. TESTAR A SINCRONIZAÇÃO ENTRE DOIS APARELHOS
+--------------------------------------------------------------------------
+1. Abra o Mentor no computador e entre com a sua conta.
+2. Abra o Mentor no celular e entre com A MESMA conta.
+3. Crie uma tarefa no computador — ela aparece no celular em 1–2 segundos,
+   sem recarregar a página. Altere no celular e veja mudar no computador.
+Se preferir testar sozinho: duas abas do navegador lado a lado.
+
+--------------------------------------------------------------------------
+9. TESTAR O MODO OFFLINE
+--------------------------------------------------------------------------
+1. Ative o modo avião no celular (ou DevTools → Network → Offline).
+2. Crie/edite/conclua tarefas normalmente — o indicador mostra
+   "Offline — salvo neste aparelho".
+3. Feche e reabra o app: as alterações continuam lá (cache do Firestore em
+   IndexedDB + cache local do Mentor).
+4. Volte a ficar online: as escritas pendentes sobem sozinhas e o indicador
+   passa a "Sincronizado".
+
+--------------------------------------------------------------------------
+10. INSTALAR COMO APP (PWA)
+--------------------------------------------------------------------------
+Android/Chrome: menu (⋮) → "Adicionar à tela inicial".
+iPhone/Safari:  Compartilhar → "Adicionar à Tela de Início".
+Desktop/Chrome: ícone de instalar na barra de endereço.
+
+--------------------------------------------------------------------------
+11. DECISÕES TÉCNICAS E LIMITAÇÕES
+--------------------------------------------------------------------------
+* Modelo de dados: um documento por usuário —
+  users/{uid}/state/mentor  { tasks, habits, lists, completedOccurrences,
+  updatedAt (serverTimestamp), device }.
+  Motivo: o Mentor já trata esses quatro arrays como um estado coeso
+  (tarefas recorrentes ↔ ocorrências concluídas ↔ listas). Um documento
+  mantém a escrita atômica e cabe com folga no limite de 1 MB para uso
+  pessoal. Se um dia o volume crescer muito, o caminho é quebrar em
+  subcoleções (users/{uid}/tasks/{taskId}) — a camada firebase-sync.js
+  isola essa mudança do resto do app.
+* Conflitos: last-write-wins por documento (merge do Firestore +
+  serverTimestamp). Não há resolução manual. A janela de perda é só a de
+  duas edições simultâneas em aparelhos diferentes no mesmo instante —
+  aceitável para uso pessoal.
+* Offline: persistentLocalCache com multi-abas. Em navegação anônima sem
+  IndexedDB o app avisa que o offline é limitado, mas continua funcionando.
+* Service Worker (sw.js, v2): passou a ignorar requisições que não sejam GET
+  same-origin. Isso foi necessário porque o Firestore usa streaming/long-
+  polling e POSTs para firestore.googleapis.com — interceptá-los quebraria a
+  sincronização em tempo real e o offline do próprio SDK.
+* O localStorage continua como cache de primeira pintura, nunca como segunda
+  fonte de verdade: ele é escrito a partir do estado e jamais sobrescreve a
+  nuvem sem a confirmação da tela de migração.
+* Sem login o Mentor funciona normalmente, só que apenas neste aparelho.
